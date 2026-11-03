@@ -1,8 +1,8 @@
 # Atlas kit
 
-![version](https://img.shields.io/badge/version-1.0.0-007aff)
+![version](https://img.shields.io/badge/version-1.1.0-007aff)
 
-**Current version:** 1.0.0 · 3 Nov 2026 · [changelog](CHANGELOG.md)
+**Current version:** 1.1.0 · 3 Nov 2026 · [changelog](CHANGELOG.md)
 
 *See the real app: every screen as a saved screenshot, how they link, what changed, and notes on real screens that Claude can read.*
 
@@ -22,6 +22,20 @@ One Atlas for any app or website. The kit scans the app in a throwaway browser w
 - **Proposed screens:** a prototype listed against a real screen shows beside it, with the same wipe.
 
 The screenshots are saved, not live. The page says so wherever it matters.
+
+### On a phone
+
+The same page, made for a thumb (on a computer nothing moves):
+
+- **One row at the top** (name, search, rescan, Notes) and **Lightbox · Map · Flows in a bar along the bottom.** Banners fold to one line; tap to open them.
+- **Pinch to zoom everywhere:** the map (around your fingers), every screenshot (full length, details, before/now, proposed, flow steps, in one zoom viewer) and the screen while you mark a note. Double-tap zooms in or back out. Past a limit it gives a little and eases back; a flick glides to rest.
+- **Map:** one finger moves it, one tap opens a screen, double-tap zooms to it, and you **hold a screen, then drag** to move it. Show, Labels, Note label and Tidy layout sit behind **Map options**, the legend behind **Key**.
+- **Notes:** pinch in, tap the part (even a small one), and the form slides up from the bottom. The zoom stays.
+- **Swipes:** in details, left and right for the next screen and down to close; in Flows, left and right for the next step, with Back · Next · Lightbox always on screen.
+- **Lightbox:** pinch the grid for 2, 3 or 4 columns, remembered on that device.
+- Every control is at least 44 pt, and the page keeps clear of the notch and the Home bar.
+
+On a computer, a trackpad pinch zooms in the zoom viewer too, and the map's buttons and double-click glide instead of jumping.
 
 Try it: [Atlas kit demo](https://claude.ai/artifact/G6mPQt1qo3iUDaoDMkqFEu), a scan of the made-up app in `tests/apps/state` at its version 2, compared with version 1, with a prototype listed against one screen. The kit itself has no app's screens, names or colours.
 
@@ -162,7 +176,7 @@ Copying a report starts with the shared header:
 
 ```
 Atlas notes · note format v1 · 3 Nov 2026
-Source: atlas · App: … · Scan: … · Kit 1.0.0
+Source: atlas · App: … · Scan: … · Kit 1.1.0
 ```
 
 **Never stored:** anything typed into a field, or real user data.
@@ -206,7 +220,7 @@ Source: atlas · App: … · Scan: … · Kit 1.0.0
 python3 tests/test_kit.py
 ```
 
-Scans a made-up website and a made-up app of screens (with IDs, a flow, a door, captions and a "version 2" that renames a code key, adds a screen with no ID and changes how one looks), then checks the viewer, notes and "check my notes" with a stand-in for the page's store. It also checks that no app's names are in the kit, and that `SHARED.md` matches the Prototype kit's. With the Prototype kit beside this repo (or `PROTOTYPE_KIT=path`), a real Prototype kit page is captured as a proposed screen too. About 2 minutes.
+Scans a made-up website and a made-up app of screens (with IDs, a flow, a door, captions and a "version 2" that renames a code key, adds a screen with no ID and changes how one looks), then checks the viewer, notes and "check my notes" with a stand-in for the page's store, and the viewer on a phone (iPhone 15 Pro size with real touch events: pinch, double-tap, swipes, hold-to-move, 44 pt controls, easing back at the limits, one draw per screen refresh). It also checks that no app's names are in the kit, and that `SHARED.md` matches the Prototype kit's. With the Prototype kit beside this repo (or `PROTOTYPE_KIT=path`), a real Prototype kit page is captured as a proposed screen too. About 3 minutes. `python3 tests/test_kit.py phone` runs the phone checks on their own (they need the scans, so about 1½ minutes).
 
 ## Licence
 

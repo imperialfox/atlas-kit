@@ -2,4 +2,4 @@
 
 The kit belongs to no app. An app uses it through its own settings file (see README.md › Adding an app).
 """
-VERSION = '1.0.0'
+VERSION = '1.1.0'

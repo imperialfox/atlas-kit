@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.1.0 · 3 Nov 2026
+
+*The Atlas on a phone: pinch, swipes and a bottom bar, with the computer unchanged*
+
+**On a phone**
+- One row at the top (name, search icon, rescan, Notes with its count); search opens over the row with Cancel. The changes and tags banners fold to one line.
+- Lightbox · Map · Flows in a bar along the bottom. Every control at least 44 pt; the page keeps clear of the notch and the Home bar.
+- **Map:** pinch to zoom around your fingers, one finger to move, one tap to open a screen, double-tap a screen to zoom to it (or the background to zoom in, or fit when already close). Hold a screen, then drag, to move it. Opens at a readable size on the first area. Show, Labels, Note label and Tidy layout behind **Map options**; the legend behind **Key**.
+- **One zoom viewer** for full length, details, before/now, proposed screens and flow steps: pinch, double-tap 2.5×, drag. The wipes can be zoomed with their slider under them.
+- **Notes:** pinch to zoom the screen while marking a part (up to 5×); the form waits as a small sheet and slides up when a part is picked; the zoom stays.
+- **Swipes:** details left and right for the next screen, down to close; Flows left and right for the next step, with the picture and the step side by side and Back · Next · Lightbox always on screen.
+- **Lightbox grid:** pinch for 2, 3 or 4 columns (3 to start), remembered on the device.
+
+**How zooming feels**
+- Drawn once per screen refresh, on the graphics layer while moving. Past a zoom or edge limit it gives a little and eases back when you let go; a flick glides to rest. Double-tap, zoom to a screen, fit and the + / − buttons glide (about 0.3 s) with the point under your finger kept still. The page itself can't zoom under a pinch on iOS. The map's place is saved after moving stops.
+
+**On a computer**
+- Unchanged, plus trackpad pinch and scrolling in the zoom viewer (which now also shows full length), and the map's buttons and double-click glide.
+
+**Tests**
+- Phone checks at iPhone 15 Pro size with real touch events (map, zoom viewer and note-mode pinch, swipes, bottom bar, 44 pt controls, give and ease-back at the limits, one draw per refresh, no sideways scroll, no errors). The computer's checks are unchanged.
+
 ## 1.0.0 · 3 Nov 2026
 
 *First release of the Atlas kit: one Atlas for any app or site, working with the Prototype kit*

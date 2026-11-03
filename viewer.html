@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Atlas</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <style>
@@ -195,7 +195,8 @@ footer .r{margin-left:auto}
 .badge.prop{color:#d9c2ff;border-color:#4b3a6e}
 .chip.tnew{color:var(--link);border-color:#24406e}.chip.tch{color:var(--amber);border-color:var(--amberB)}
 .th.nf{background:transparent;border:1.5px dashed #6b3430;display:grid;place-items:center;color:var(--red);font-size:11px;text-align:center;padding:8px}
-.side select,.sel{height:30px;margin:0 10px;border-radius:8px;border:1px solid var(--line2);background:var(--field);font-size:12px;padding:0 8px;max-width:calc(100% - 20px)}
+.side select{height:30px;}.sel{height:32px;}
+.side select,.sel{margin:0 10px;border-radius:8px;border:1px solid var(--line2);background:var(--field);font-size:12px;padding:0 8px;max-width:calc(100% - 20px)}
 .parts{display:flex;flex-wrap:wrap;gap:4px}
 .parts span{font:10px/1.6 ui-monospace,Menlo,monospace;padding:0 6px;border-radius:6px;background:var(--raise);color:var(--ink2)}
 .tag.door{border-style:dashed;color:#d9c2ff;border-color:#4b3a6e}
@@ -236,6 +237,68 @@ footer .r{margin-left:auto}
   .fshot{width:min(230px,60vw)}
   .finfo{width:100%}
 }
+/* ---------- 1.1 phone pass ---------- */
+.mobonly{display:none!important}
+.zoomv{position:fixed;inset:0;z-index:30;background:rgba(8,8,10,.96);display:none;flex-direction:column}
+.zoomv.open{display:flex}
+.ztop{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;color:var(--ink)}
+.ztop strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zarea{flex:1;position:relative;overflow:hidden;touch-action:none;cursor:grab}
+.zin{position:absolute;left:0;top:0;transform-origin:0 0}
+.zin>img{display:block;width:100%;border-radius:14px}
+.zin .wipe{max-width:none}
+.zbot{display:flex;flex-direction:column;gap:8px;padding:10px 14px calc(12px + env(safe-area-inset-bottom))}
+[data-zoom]{cursor:zoom-in}
+.moving{will-change:transform}
+.zbtn{align-self:center}
+.stwrap{position:relative;overflow:hidden;touch-action:none;border-radius:18px;flex:0 0 auto}
+.stwrap .stage{position:absolute;left:0;top:0;transform-origin:0 0;border-radius:0}
+.bfold{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;padding:8px 14px;margin-bottom:12px;border-radius:12px;background:#1d2230;border:1px solid #2c3854;color:var(--ink);font-size:13px;font-weight:600;text-align:left;cursor:pointer}
+.bfold span{margin-left:auto;color:var(--mute2)}
+.mcard.lift .th{outline:3px solid var(--amber);outline-offset:2px}
+@media (max-width:760px){
+  .mobonly{display:inline-flex!important}
+  .deskonly{display:none!important}
+  header{flex-wrap:nowrap;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;position:relative}
+  .brand{flex:1;min-width:0}.brand>div:last-child{min-width:0}.brand strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header .search{display:none}
+  header.searching .search{display:flex;position:absolute;left:12px;right:12px;top:calc(8px + env(safe-area-inset-top));height:44px;z-index:3;box-shadow:0 0 0 8px var(--bar)}
+  header.searching .search input{font-size:16px}
+  .seg.views{position:fixed;left:0;right:0;bottom:0;z-index:14;border-radius:0;padding:6px 10px calc(6px + env(safe-area-inset-bottom));background:rgba(27,27,30,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid var(--line);gap:6px}
+  .seg.views button{flex:1;height:44px;font-size:13px}
+  .body{padding-bottom:calc(57px + env(safe-area-inset-bottom))}
+  footer{display:none}
+  main{touch-action:pan-y}
+  .grid{grid-template-columns:repeat(var(--cols,3),minmax(0,1fr))}
+  .btn,.btn.sm{min-height:44px}.ib{width:44px;height:44px}
+  #rescan{min-width:44px;justify-content:center}
+  .chip,.mchips .chip{height:44px;padding:0 14px}
+  .seg button{height:44px}.navrow{height:44px}
+  .sel,.side select,.nrow select{height:44px}
+  .lrow{min-height:48px}
+  .more{min-height:44px;display:inline-flex;align-items:center}
+  aside.det{padding-bottom:env(safe-area-inset-bottom)}
+  .dtop{padding-top:calc(12px + env(safe-area-inset-top))}
+  .otop{padding-top:calc(10px + env(safe-area-inset-top))}
+  .mbar{display:none!important}
+  .mbar.open{display:flex!important;top:68px!important;max-width:calc(100% - 24px);z-index:5}
+  .mlegend{display:none!important}.mlegend.open{display:flex!important;bottom:72px!important}
+  body[data-view=flows] .mchips{display:none}
+  .flows{padding:12px 12px 80px;gap:12px}
+  .fbtn{min-width:0;padding:6px 10px}.fbtn[aria-pressed=true]{padding:5px 9px}
+  .fstage{flex-direction:row;flex-wrap:nowrap;align-items:flex-start;gap:12px}
+  .fshot{width:min(50vw,240px)}
+  .finfo{flex:1 1 0;min-width:0;gap:8px}.finfo h2{font-size:16px}.finfo .dcap{font-size:12px}
+  .finfo>.note:last-child{display:none}
+  .tap{font-size:12px;padding:6px 10px;white-space:normal}
+  .fnav{position:fixed;left:8px;right:8px;bottom:calc(62px + env(safe-area-inset-bottom));z-index:13;padding:6px;border-radius:14px;background:rgba(27,27,30,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line)}
+  .strip{padding-bottom:70px}
+  .fnav .btn{flex:1;justify-content:center}
+  .nm{padding:0 8px 140px}
+  .nform{position:fixed;left:0;right:0;bottom:0;z-index:2;max-height:58vh;overflow:auto;border-radius:16px 16px 0 0;padding-bottom:calc(14px + env(safe-area-inset-bottom));box-shadow:0 -12px 30px rgba(0,0,0,.45)}
+  .nform.peek>*:not(.peekrow){display:none!important}
+  .zin>img{border-radius:10px}
+}
 </style>
 </head>
 <body>
@@ -245,16 +308,17 @@ footer .r{margin-left:auto}
       <div class="logo" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
       <div><strong id="appname">Atlas</strong><span id="appv"></span></div>
     </div>
-    <div class="seg" role="group" aria-label="View">
+    <div class="seg views" role="group" aria-label="View">
       <button data-view="lightbox" aria-pressed="true">Lightbox</button>
       <button data-view="map" aria-pressed="false">Map</button>
       <button data-view="flows" aria-pressed="false" id="flowsTab">Flows</button>
     </div>
     <label class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-      <input id="q" type="search" placeholder="Search screens, IDs, buttons, notes" aria-label="Search screens, IDs, buttons and notes"><span class="kbd">/</span></label>
+      <input id="q" type="search" placeholder="Search screens, IDs, buttons, notes" aria-label="Search screens, IDs, buttons and notes"><span class="kbd">/</span><button class="more mobonly" id="searchX">Cancel</button></label>
+    <button class="ib mobonly" id="searchBtn" aria-label="Search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button>
     <label class="size">S<input id="size" type="range" min="100" max="280" step="10" aria-label="Card size">L</label>
     <span class="stamp" id="stamp"></span>
-    <button class="btn" id="rescan" aria-haspopup="dialog">Rescan</button>
+    <button class="btn" id="rescan" aria-haspopup="dialog" aria-label="Rescan"><span class="deskonly">Rescan</span><span class="mobonly" aria-hidden="true">↻</span></button>
     <button class="btn pri" id="notesBtn" aria-haspopup="dialog">Notes · 0</button>
   </header>
   <div class="mchips" id="mchips" role="group" aria-label="Filters"></div>
@@ -269,9 +333,10 @@ footer .r{margin-left:auto}
   <footer><span id="foot1"></span><span id="foot2"></span><span class="r" id="keys">/ search · arrows move · Enter open · Esc close · F full length · N note</span></footer>
 </div>
 
-<div class="overlay full" id="full" role="dialog" aria-modal="true" aria-label="Full-length screenshot">
-  <div class="otop"><strong id="ftitle"></strong><span class="note" id="fsub"></span><button class="ib" style="margin-left:auto" id="fclose" aria-label="Close full length">✕</button></div>
-  <div class="fsc"><img id="fimg" alt=""></div>
+<div class="zoomv" id="zoomv" role="dialog" aria-modal="true" aria-label="Zoomed picture">
+  <div class="ztop"><strong id="ztitle"></strong><span class="note" id="zsub"></span><button class="ib" style="margin-left:auto" id="zclose" aria-label="Close">✕</button></div>
+  <div class="zarea" id="zarea"><div class="zin" id="zin"></div></div>
+  <div class="zbot" id="zbot"></div>
 </div>
 <div class="overlay" id="nmode" role="dialog" aria-modal="true" aria-label="Add a note"></div>
 <div class="sheetbg" id="xbg"><section class="xsheet" id="xsheet" role="dialog" aria-modal="true" aria-label="Export for Claude"></section></div>
@@ -282,7 +347,7 @@ footer .r{margin-left:auto}
 </div>
 <script>
 'use strict';
-const KIT_VERSION = '1.0.0';
+const KIT_VERSION = '1.1.0';
 const KINDS = ['Tab','Screen','Sub-page','Sheet','State','Page'];
 const EXTRA_AREAS = ['Other','Not captured yet','Not found this scan','Gone since the last scan','No longer in the code'];
 const STATUS = {captured:'✓ Captured', failed:'▲ Failed', uncaptured:'Not captured yet', notfound:'Not found this scan', gone:'– Gone'};
@@ -295,6 +360,120 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let PFX = 'atlas.';
 const store = {get(k,d){try{const v=localStorage.getItem(PFX+k);return v==null?d:JSON.parse(v)}catch(e){return d}}, set(k,v){try{localStorage.setItem(PFX+k,JSON.stringify(v))}catch(e){}}};
+const isPhone = () => window.matchMedia('(max-width:760px)').matches;
+// One zoomable area: pinch with two fingers (or a trackpad), drag with one when zoomed in, double-tap to zoom.
+// Moves are drawn once per screen refresh; past the limits it gives a little and eases back when you let go;
+// a flick keeps gliding; double-tap and reset are animated.
+// o: {max, top (pin tall content to the top), dbl, tap(p), mode() ('draw' sends one-finger drags to o.drag), drag:{start,move,end,cancel}, hover(p), init, panAlways}
+function noPageZoom(el){   // iOS: keep the page itself from zooming while a pinch is meant for this area
+  ['gesturestart','gesturechange','gestureend'].forEach(n => el.addEventListener(n, e => e.preventDefault()));
+  el.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, {passive:false});
+}
+const ease = p => 1 - Math.pow(1-p, 3);
+function zoomable(area, inner, o){
+  o = o || {};
+  const MAX = o.max || 5, T = Object.assign({z:1, x:0, y:0}, o.init||{}), P = new Map();
+  let g = null, last = null, anim = 0, frame = 0, trail = [];
+  const R = () => area.getBoundingClientRect();
+  function bounds(z){ const r = R(), w = inner.offsetWidth*z, h = inner.offsetHeight*z, top = typeof o.top === 'function' ? o.top() : o.top;
+    return {bx: w <= r.width+0.5 ? [(r.width-w)/2, (r.width-w)/2] : [r.width-w, 0],
+            by: h <= r.height+0.5 ? (top ? [0,0] : [(r.height-h)/2, (r.height-h)/2]) : [r.height-h, 0]}; }
+  const band = (v, lo, hi) => v < lo ? lo-(lo-v)*0.35 : v > hi ? hi+(v-hi)*0.35 : v;   // past an edge it gives way a little
+  const softZ = z => z > MAX ? MAX*Math.pow(z/MAX, .2) : z < 1 ? Math.pow(z, .3) : z;
+  function settled(t){ const z = Math.max(1, Math.min(MAX, t.z)), b = bounds(z);
+    return {z, x:Math.min(b.bx[1], Math.max(b.bx[0], t.x)), y:Math.min(b.by[1], Math.max(b.by[0], t.y))}; }
+  function draw(){ frame = 0; inner.style.transform = 'translate3d('+T.x+'px,'+T.y+'px,0) scale('+T.z+')';
+    inner.classList.add('moving'); clearTimeout(inner._mv); inner._mv = setTimeout(() => inner.classList.remove('moving'), 180);
+    if (o.onChange) o.onChange(T); }
+  const show = () => { if (!frame) frame = requestAnimationFrame(draw); };
+  const stop = () => { cancelAnimationFrame(anim); anim = 0; };
+  // glide to a resting place; with an anchor, the point under your finger stays put while the zoom changes
+  function glide(to, ms, an){ stop(); const a = {x:T.x, y:T.y, z:T.z}, t0 = performance.now(); ms = ms || 300;
+    const step = now => { const p = Math.min(1, (now-t0)/ms), e = ease(p);
+      T.z = a.z*Math.pow(to.z/a.z, e);
+      if (an) { T.x = an.mx-an.wx*T.z + (to.x-(an.mx-an.wx*to.z))*e; T.y = an.my-an.wy*T.z + (to.y-(an.my-an.wy*to.z))*e; }
+      else { T.x = a.x+(to.x-a.x)*e; T.y = a.y+(to.y-a.y)*e; }
+      draw(); anim = p < 1 ? requestAnimationFrame(step) : 0; };
+    anim = requestAnimationFrame(step); }
+  function zoomTo(z, cx, cy, animate){ const r = R(), mx = cx-r.left, my = cy-r.top, wx = (mx-T.x)/T.z, wy = (my-T.y)/T.z;
+    z = Math.max(1, Math.min(MAX, z)); const to = settled({z, x:mx-wx*z, y:my-wy*z});
+    if (animate === false) { stop(); Object.assign(T, to); show(); } else glide(to, 320, {mx, my, wx, wy}); }
+  function reset(animate){ const to = settled({z:1, x:0, y:0}); if (animate) glide(to, 320); else { stop(); Object.assign(T, to); draw(); } }
+  function settle(ms){ const to = settled(T); if (Math.abs(to.x-T.x)+Math.abs(to.y-T.y)+Math.abs(to.z-T.z)*200 > 0.5) glide(to, ms||280); }
+  const local = e => { const r = R(); return {x:(e.clientX-r.left-T.x)/T.z, y:(e.clientY-r.top-T.y)/T.z}; };
+  noPageZoom(area);
+  area.addEventListener('pointerdown', e => {
+    if (e.target.closest('button,input,select,a,textarea')) return;
+    try { area.setPointerCapture(e.pointerId); } catch(x) {}
+    stop(); P.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if (P.size === 2) {
+      if (g && g.draw && o.drag && o.drag.cancel) o.drag.cancel();
+      const [a,b] = [...P.values()], r = R(), mx = (a.x+b.x)/2-r.left, my = (a.y+b.y)/2-r.top;
+      g = {pinch:true, d0:Math.max(1, Math.hypot(a.x-b.x, a.y-b.y)), z0:T.z, wx:(mx-T.x)/T.z, wy:(my-T.y)/T.z}; return;
+    }
+    if (P.size > 2) return;
+    g = {sx:e.clientX, sy:e.clientY, x0:T.x, y0:T.y, moved:false}; trail = [{t:performance.now(), x:e.clientX, y:e.clientY}];
+    if (o.mode && o.mode()==='draw' && o.drag) { g.draw = true; o.drag.start(local(e)); }
+    e.preventDefault();
+  });
+  area.addEventListener('pointermove', e => {
+    if (!P.has(e.pointerId)) { if (o.hover && e.pointerType==='mouse') o.hover(local(e)); return; }
+    P.set(e.pointerId, {x:e.clientX, y:e.clientY}); if (!g) return;
+    if (g.pinch) { if (P.size < 2) return; const [a,b] = [...P.values()], r = R(), mx = (a.x+b.x)/2-r.left, my = (a.y+b.y)/2-r.top;
+      T.z = softZ(g.z0*Math.hypot(a.x-b.x, a.y-b.y)/g.d0); T.x = mx-g.wx*T.z; T.y = my-g.wy*T.z; g.mx = mx; g.my = my; show(); return; }
+    if (g.done) return;
+    const dx = e.clientX-g.sx, dy = e.clientY-g.sy; if (Math.abs(dx)+Math.abs(dy) > 8) g.moved = true;
+    if (g.draw) { o.drag.move(local(e)); return; }
+    if (g.moved && (T.z > 1.01 || o.panAlways)) { const b = bounds(T.z); T.x = band(g.x0+dx, b.bx[0], b.bx[1]); T.y = band(g.y0+dy, b.by[0], b.by[1]); show();
+      trail.push({t:performance.now(), x:e.clientX, y:e.clientY}); if (trail.length > 6) trail.shift(); }
+  });
+  const up = e => {
+    if (!P.has(e.pointerId)) return; P.delete(e.pointerId); if (!g) return;
+    if (g.pinch || g.done) { g = P.size ? {done:true} : null; if (!P.size) settle(300); return; }   // lifting fingers after a pinch is never a tap
+    if (g.draw) { o.drag.end(); g = null; return; }
+    if (g.moved) {   // a flick keeps going for a moment, then eases to rest
+      const a = trail[0], b = trail[trail.length-1], dt = Math.max(16, b.t-a.t), vx = (b.x-a.x)/dt, vy = (b.y-a.y)/dt;
+      if (performance.now()-b.t < 80 && Math.hypot(vx, vy) > 0.25) glide(settled({z:T.z, x:T.x+vx*220, y:T.y+vy*220}), 480); else settle();
+      g = null; return;
+    }
+    const now = Date.now(), p = {x:e.clientX, y:e.clientY}, lp = local(e);
+    if (o.dbl && last && now-last.t < 320 && Math.hypot(p.x-last.x, p.y-last.y) < 30) {
+      clearTimeout(last.timer); last = null;
+      if (T.z > 1.05) reset(true); else zoomTo(2.5, p.x, p.y);
+    } else last = {t:now, x:p.x, y:p.y, timer: o.tap ? setTimeout(() => o.tap(lp), o.dbl ? 300 : 0) : 0};
+    g = null;
+  };
+  area.addEventListener('pointerup', up); area.addEventListener('pointercancel', up);
+  area.addEventListener('wheel', e => { e.preventDefault(); stop();
+    if (e.ctrlKey || e.metaKey) zoomTo(T.z*Math.exp(-e.deltaY*0.01), e.clientX, e.clientY, false);
+    else { Object.assign(T, settled({z:T.z, x:T.x-e.deltaX, y:T.y-e.deltaY})); show(); } }, {passive:false});
+  Object.assign(T, settled(T)); draw();
+  return {T, reset, zoomTo, local};
+}
+// the zoom viewer: one picture, or two with a wipe between them
+let ZV = null; const WIPES = {};
+function openZoom(o){
+  const v = $('zoomv'), inner = $('zin'), area = $('zarea');
+  $('ztitle').textContent = o.title || ''; $('zsub').textContent = o.sub || '';
+  v.classList.add('open');
+  const W = Math.min(area.clientWidth - (isPhone()?16:40), o.wide ? 900 : (isPhone() ? 9999 : 430));
+  inner.style.width = W+'px';
+  if (o.under) {
+    inner.innerHTML = '<div class="wipe" data-wipe="zoomw" style="max-width:none"><img src="'+esc(o.over)+'" alt=""><div class="top" style="width:50%"><img src="'+esc(o.under)+'" alt=""></div><div class="bar" style="left:50%"></div></div>';
+    $('zbot').innerHTML = '<label class="note" style="display:flex;align-items:center;gap:10px">'+esc(o.a)+' <input type="range" data-wiper="zoomw" min="0" max="100" value="50" style="flex:1;height:44px;accent-color:#f5b13d" aria-label="Wipe between '+esc(o.a)+' and '+esc(o.b)+'"> '+esc(o.b)+'</label><span class="note">Pinch or double-tap to zoom · drag to move when zoomed</span>';
+  } else {
+    inner.innerHTML = '<img src="'+esc(o.src)+'" alt="'+esc(o.title||'')+'">';
+    $('zbot').innerHTML = '<span class="note">Pinch or double-tap to zoom · drag to move'+(o.top?' · scroll for the rest':'')+'</span>';
+  }
+  if (!ZV) ZV = zoomable(area, inner, {dbl:true, max:6, top:() => ZV_TOP, panAlways:true});
+  ZV_TOP = !!o.top;
+  const go = () => { sizeWipes(); ZV.reset(false); };
+  inner.querySelectorAll('img').forEach(i => { if (!i.complete) i.addEventListener('load', go, {once:true}); });
+  requestAnimationFrame(go);
+  $('zclose').focus();
+}
+let ZV_TOP = false;
+function closeZoom(){ $('zoomv').classList.remove('open'); $('zin').innerHTML = ''; }
 function toast(t, ms){ const o=document.querySelector('.toast'); if(o) o.remove(); const el=document.createElement('div'); el.className='toast'; el.setAttribute('role','status'); el.textContent=t; document.body.appendChild(el); setTimeout(()=>el.remove(), ms||2200); }
 
 let A = null, byId = {}, ALIAS = {}, AREAS = [];
@@ -348,7 +527,7 @@ function renderNotesBtn(){
 
 // ---------- helpers ----------
 function fmtWhen(iso){ const d=new Date(iso); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
-function save(){ const keep = {}; for (const k of ['view','area','status','kind','group','showCode','size','tabbar','stays','onlyChanged','mapKinds','mapLabels','nFilter','since','sinceOnly','flow']) keep[k] = S[k]; store.set('view', keep); }
+function save(){ const keep = {}; for (const k of ['view','area','status','kind','group','showCode','size','tabbar','stays','onlyChanged','mapKinds','mapLabels','nFilter','since','sinceOnly','flow','cols']) keep[k] = S[k]; store.set('view', keep); }
 const changed = s => s.change && s.change.kind && s.change.kind !== 'not-recaptured';
 const hidden = s => s.status==='uncaptured' || s.status==='notfound';
 const tagOf = s => S.since && s.since ? s.since[S.since] || null : null;
@@ -460,10 +639,16 @@ function renderSide(){
     AREAS.filter(a=>ca[a]&&!EXTRA_AREAS.includes(a)).map(a=>'<button class="chip" data-f="area" data-v="'+esc(a)+'" aria-pressed="'+(S.area===a)+'">'+esc(a)+'</button>').join('')+
     '<button class="chip fail" data-f="status" data-v="failed" aria-pressed="'+(S.status==='failed')+'">▲ Failed '+(cs.failed||0)+'</button>'+
     '<button class="chip unc" data-f="status" data-v="uncaptured" aria-pressed="'+(S.status==='uncaptured')+'">In code only '+(cs.uncaptured||0)+'</button>'+
-    (B.length?'<select class="sel" id="since2" aria-label="Tags since" style="height:32px;margin:0"><option value="">Tags since: off</option>'+B.map(b=>'<option value="'+esc(b.id)+'" '+(S.since===b.id?'selected':'')+'>Since '+esc(b.version||'?')+' · '+fmtWhen(b.at)+'</option>').join('')+'</select>':'');
+    (B.length?'<select class="sel" id="since2" aria-label="Tags since" style="margin:0"><option value="">Tags since: off</option>'+B.map(b=>'<option value="'+esc(b.id)+'" '+(S.since===b.id?'selected':'')+'>Since '+esc(b.version||'?')+' · '+fmtWhen(b.at)+'</option>').join('')+'</select>':'');
 }
 function banner(){
   const p = A.scan.prev; let h = '';
+  if (isPhone() && !S.bannerOpen && (p || S.since)) {
+    const b = (A.scan.baselines||[]).find(x=>x.id===S.since);
+    const bits = [p ? '◆ '+A.screens.filter(changed).length+' changed since the last scan' : '', b ? 'tagged since '+(b.version||'?') : ''].filter(Boolean);
+    return '<button class="bfold" id="bfold" aria-expanded="false">'+esc(bits.join(' · '))+'<span>›</span></button>';
+  }
+  if (isPhone() && (p || S.since)) h += '<button class="bfold" id="bfold" aria-expanded="true">Fold these away<span>⌃</span></button>';
   if (p) {
     const c = k => A.screens.filter(s=>s.change&&s.change.kind===k).length;
     h += '<div class="banner"><div style="display:flex;flex-direction:column;gap:3px;min-width:240px"><strong>Changes since the last scan</strong>'+
@@ -507,8 +692,8 @@ function changeSect(s){
   const c = s.change; if (!c) return '';
   let h = '<div class="sect"><div class="h">Since the last scan · '+esc((CHANGE[c.kind]||[c.kind])[0])+'</div>';
   if (c.prevShot && s.status==='captured' && c.kind!=='links-changed') {
-    h += '<div class="cmp"><figure><div class="pic"><img src="'+esc(c.prevShot)+'" alt="Before"></div><figcaption>Before · '+esc(A.scan.prev.version)+'</figcaption></figure>'+
-         '<figure><div class="pic"><img src="'+esc(s.shot)+'" alt="After">'+(c.box?'<span class="chbox" style="'+boxStyle(c.box)+'"></span>':'')+'</div><figcaption>Now · '+esc(A.scan.version)+(c.pct?' · '+c.pct+'% of the screen differs':'')+'</figcaption></figure></div>'+
+    h += '<div class="cmp"><figure><div class="pic" data-zoom="'+esc(c.prevShot)+'" data-ztitle="'+esc(s.title+' · before ('+A.scan.prev.version+')')+'"><img src="'+esc(c.prevShot)+'" alt="Before"></div><figcaption>Before · '+esc(A.scan.prev.version)+'</figcaption></figure>'+
+         '<figure><div class="pic" data-zoom="'+esc(s.shot)+'" data-ztitle="'+esc(s.title+' · now ('+A.scan.version+')')+'"><img src="'+esc(s.shot)+'" alt="After">'+(c.box?'<span class="chbox" style="'+boxStyle(c.box)+'"></span>':'')+'</div><figcaption>Now · '+esc(A.scan.version)+(c.pct?' · '+c.pct+'% of the screen differs':'')+'</figcaption></figure></div>'+
          wipe('wc', c.prevShot, s.shot, 'Before', 'Now');
   } else if (c.kind==='gone') h += '<p class="note">This screen was in the last scan but isn’t in this one. The picture is from the last scan. Notes on it are kept.</p>';
   else if (c.kind==='new') h += '<p class="note">First seen in this scan.</p>';
@@ -521,8 +706,10 @@ function changeSect(s){
 }
 // a wipe between two pictures of the same screen: drag the slider from one to the other
 function wipe(key, under, over, a, b){
+  WIPES[key] = {under, over, a, b};
   return '<div class="wipe" data-wipe="'+key+'"><img src="'+esc(over)+'" alt=""><div class="top" style="width:50%"><img src="'+esc(under)+'" alt=""></div><div class="bar" style="left:50%"></div></div>'+
-    '<label class="note" style="display:flex;align-items:center;gap:8px">'+esc(a)+' <input type="range" data-wiper="'+key+'" min="0" max="100" value="50" style="flex:1;accent-color:#f5b13d" aria-label="Wipe between '+esc(a)+' and '+esc(b)+'"> '+esc(b)+'</label>';
+    '<label class="note" style="display:flex;align-items:center;gap:8px">'+esc(a)+' <input type="range" data-wiper="'+key+'" min="0" max="100" value="50" style="flex:1;accent-color:#f5b13d" aria-label="Wipe between '+esc(a)+' and '+esc(b)+'"> '+esc(b)+'</label>'+
+    '<button class="btn sm zbtn" data-zwipe="'+key+'">⤢ Zoom in on these</button>';
 }
 function proposedSect(s){
   const P = proposedFor(s.id), L = listedFor(s.id);
@@ -530,8 +717,8 @@ function proposedSect(s){
   for (const p of P) {
     const url = p.url || (p.slug ? 'https://claude.ai/artifact/'+p.slug : '');
     h += '<p class="note" style="margin:0 0 6px"><b style="color:var(--ink)">'+esc(p.title||'A prototype')+'</b>'+(p.version?' · version '+esc(p.version):'')+(url?' · <a href="'+esc(url)+'" target="_blank" rel="noopener">Open the prototype</a>':'')+'</p>'+
-      '<div class="cmp"><figure><div class="pic"><img src="'+esc(s.shot)+'" alt="The real screen now"></div><figcaption>Now · '+esc(A.scan.version)+'</figcaption></figure>'+
-      '<figure><div class="pic"><img src="'+esc(p.shot)+'" alt="The proposed screen"></div><figcaption>Proposed · '+esc(p.title||'prototype')+'</figcaption></figure></div>'+
+      '<div class="cmp"><figure><div class="pic" data-zoom="'+esc(s.shot)+'" data-ztitle="'+esc(s.title+' · now')+'"><img src="'+esc(s.shot)+'" alt="The real screen now"></div><figcaption>Now · '+esc(A.scan.version)+'</figcaption></figure>'+
+      '<figure><div class="pic" data-zoom="'+esc(p.shot)+'" data-ztitle="'+esc((p.title||'Proposed')+' · proposed')+'"><img src="'+esc(p.shot)+'" alt="The proposed screen"></div><figcaption>Proposed · '+esc(p.title||'prototype')+'</figcaption></figure></div>'+
       wipe('wp-'+p.pid, s.shot, p.shot, 'Now', 'Proposed');
   }
   for (const p of L) h += '<div class="lrow"><span class="lt">'+esc(p.title||'A prototype')+'<small>Listed here; the next rescan shows it beside this screen.</small></span>'+(p.url?'<a class="tag" href="'+esc(p.url)+'" target="_blank" rel="noopener">Open</a>':'')+'</div>';
@@ -643,14 +830,14 @@ function openNote(id){
   NM = {s, mode: s.elements && s.elements.length ? 'tap' : 'box', sel:null, el:null, hover:null, text:'', kind:''};
   $('nmode').classList.add('open'); renderNM();
 }
-function nmScale(){ const vw = A.scan.viewport, phone = window.innerWidth <= 760; const h = phone ? window.innerHeight*0.62 : Math.min(window.innerHeight - 110, vw.h); return Math.min(h / vw.h, (window.innerWidth - 32) / vw.w, 1); }
+function nmScale(){ const vw = A.scan.viewport, phone = isPhone(); const h = phone ? window.innerHeight - 70 - 92 : Math.min(window.innerHeight - 110, vw.h); return Math.min(h / vw.h, (window.innerWidth - (phone?16:32)) / vw.w, phone ? 2 : 1); }
 function hitAll(x, y){ return (NM.s.elements||[]).filter(e => x>=e.x && y>=e.y && x<=e.x+e.w && y<=e.y+e.h).sort((a,b)=>a.w*a.h-b.w*b.h).filter((e,i,a)=>!i||e.w*e.h>a[i-1].w*a[i-1].h*1.08); }
 function pickPart(i){ NM.idx = Math.max(0, Math.min(NM.stack.length-1, i)); const h = NM.stack[NM.idx]; NM.sel = {x:h.x,y:h.y,w:h.w,h:h.h}; NM.el = h; }
 function hitEl(x, y){ let best = null; for (const e of NM.s.elements||[]) if (x>=e.x && y>=e.y && x<=e.x+e.w && y<=e.y+e.h && (!best || e.w*e.h < best.w*best.h)) best = e; return best; }
 const WORD = {button:'Button', a:'Link', input:'Field', textarea:'Field', select:'Menu', img:'Picture', svg:'Icon', h1:'Heading', h2:'Heading', h3:'Heading', p:'Text', li:'Row', label:'Label', nav:'Bar', header:'Header', footer:'Footer'};
 function partName(el, s){ if (!el) return 'Box on '+s.title; if (el.part) return el.part; return (WORD[el.tag]||'Box')+': '+(el.text||el.cls||el.tag).slice(0,40); }
 function renderNM(){
-  const s = NM.s, vw = A.scan.viewport, k = nmScale(), W = Math.round(vw.w*k), H = Math.round(vw.h*k);
+  const s = NM.s, vw = A.scan.viewport, k = nmScale(), W = Math.round(vw.w*k), H = Math.round(vw.h*k); NM.k = k;
   const px = b => 'left:'+b.x*k+'px;top:'+b.y*k+'px;width:'+b.w*k+'px;height:'+b.h*k+'px';
   const old = notesFor(s.id).map(n=>{const b=noteBox(n,s);return '<span class="mark old" style="'+px({x:b.x*vw.w,y:b.y*vw.h,w:b.w*vw.w,h:b.h*vw.h})+'"><b>'+n.n+'</b></span>'}).join('');
   const next = NOTES.reduce((m,n)=>Math.max(m,n.n||0),0)+1;
@@ -658,9 +845,9 @@ function renderNM(){
   $('nmode').innerHTML = '<div class="otop"><button class="btn" id="nmClose">‹ Back</button><strong>'+esc((s.sid?s.sid+' · ':'')+s.title)+'</strong><span class="note">saved '+fmtWhen(A.scan.at)+' · '+vw.w+' × '+vw.h+'</span>'+
     '<span class="hint" style="padding:6px 10px">'+(NM.mode==='tap'?'Tap a part of the screen':'Drag a box around the problem')+' · Esc to stop</span>'+
     '<div class="seg" role="group" aria-label="How to mark" style="margin-left:auto"><button data-nmm="tap" aria-pressed="'+(NM.mode==='tap')+'" '+(s.elements&&s.elements.length?'':'disabled')+'>Tap a part</button><button data-nmm="box" aria-pressed="'+(NM.mode==='box')+'">Box</button></div></div>'+
-    '<div class="nm"><div class="stage" id="stage" style="width:'+W+'px;height:'+H+'px"><img src="'+esc(s.shot)+'" alt="'+esc(s.title)+'">'+old+
-      (NM.hover&&!NM.sel?'<span class="hov" style="'+px(NM.hover)+'"></span>':'')+(NM.sel?'<span class="mark" style="'+px(NM.sel)+'"><b>'+next+'</b></span>':'')+'</div>'+
-    '<form class="nform" id="nform"><div style="display:flex;justify-content:space-between;align-items:center"><strong>Note '+next+'</strong><span class="note">on '+esc(s.title)+'</span></div>'+
+    '<div class="nm"><div class="stwrap" id="stwrap" style="width:'+W+'px;height:'+H+'px"><div class="stage" id="stage" style="width:'+W+'px;height:'+H+'px"><img src="'+esc(s.shot)+'" alt="'+esc(s.title)+'">'+old+
+      '<span id="hovm" style="display:none"></span><span id="selm" style="display:none"></span></div></div>'+
+    '<form class="nform'+(NM.sel?'':' peek')+'" id="nform"><div class="peekrow" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><strong>Note '+next+'</strong><span class="note" style="flex:1;text-align:right">'+(NM.sel?'on '+esc(s.title):isPhone()?(NM.mode==='tap'?'Pinch to zoom, then tap a part':'Drag a box; pinch with two fingers to zoom'):'on '+esc(s.title))+'</span>'+(NM.sel?'':'<button type="button" class="btn sm mobonly" id="nmCancel2">Cancel</button>')+'</div>'+
       (NM.sel?'':'<p class="note" style="margin:0">'+(NM.mode==='tap'?'Tap the part of the screen the note is about. You can switch to Box for an area.':'Drag on the screen to mark an area.')+'</p>')+
       (NM.mode==='tap'&&NM.sel?'<div style="display:flex;gap:6px;align-items:center"><span class="note" style="flex:1">Marked: '+esc(partName(el, s))+(el&&el.part?'':(el&&el.in?' (in '+esc(el.in)+')':''))+'</span>'+(NM.stack&&NM.stack.length>1?'<button type="button" class="btn sm" data-part="1" '+(NM.idx>=NM.stack.length-1?'disabled':'')+'>Bigger part</button><button type="button" class="btn sm" data-part="-1" '+(NM.idx<=0?'disabled':'')+'>Smaller</button>':'')+'</div>':'')+
       '<label class="note" style="display:flex;flex-direction:column;gap:6px">What’s wrong?<textarea id="ntext" placeholder="e.g. this banner wraps to two lines here but fits on one elsewhere">'+esc(NM.text)+'</textarea></label>'+
@@ -670,22 +857,30 @@ function renderNM(){
       '<div style="display:flex;gap:8px"><button type="button" class="btn" id="nmCancel" style="flex:1;justify-content:center">Cancel</button><button type="submit" class="btn pri" id="nmSave" style="flex:1;justify-content:center" '+(NM.sel?'':'disabled')+'>Save</button></div>'+
       (dbState==='off'?'<p class="note" style="margin:0">Saving needs the page open on claude.ai.</p>':'')+
     '</form></div>';
-  wireStage(k);
+  wireStage(k); paintNM();
+}
+// the marks only, so a drag or a hover never rebuilds the page under your finger
+function paintNM(){
+  const hv = $('hovm'), sm = $('selm'); if (!hv || !NM) return; const k = NM.k;
+  const px = b => 'left:'+b.x*k+'px;top:'+b.y*k+'px;width:'+b.w*k+'px;height:'+b.h*k+'px';
+  hv.className = 'hov'; hv.style.cssText = NM.hover && !NM.sel ? px(NM.hover) : 'display:none';
+  sm.className = 'mark'; sm.style.cssText = NM.sel ? px(NM.sel) : 'display:none';
+  sm.innerHTML = NM.sel ? '<b>'+(NOTES.reduce((m,n)=>Math.max(m,n.n||0),0)+1)+'</b>' : '';
 }
 function wireStage(k){
-  const st = $('stage'); if (!st) return;
-  const pt = e => { const r = st.getBoundingClientRect(); return {x: Math.max(0, Math.min(A.scan.viewport.w, (e.clientX - r.left)/k)), y: Math.max(0, Math.min(A.scan.viewport.h, (e.clientY - r.top)/k))}; };
-  st.addEventListener('pointermove', e => {
-    if (NM.drag) { const p = pt(e), a = NM.drag; NM.sel = {x:Math.round(Math.min(a.x,p.x)), y:Math.round(Math.min(a.y,p.y)), w:Math.round(Math.abs(p.x-a.x)), h:Math.round(Math.abs(p.y-a.y))}; keepText(); renderNM(); return; }
-    if (NM.mode==='tap' && !NM.sel && e.pointerType==='mouse') { const h = hitEl(pt(e).x, pt(e).y); if (h !== NM.hover) { NM.hover = h; keepText(); renderNM(); } }
-  });
-  st.addEventListener('pointerdown', e => {
-    e.preventDefault(); keepText();
-    const p = pt(e);
-    if (NM.mode==='tap') { NM.stack = hitAll(p.x, p.y); if (NM.stack.length) { pickPart(0); renderNM(); $('ntext').focus(); } return; }
-    st.setPointerCapture(e.pointerId); NM.drag = p; NM.el = null; NM.sel = null;
-  });
-  st.addEventListener('pointerup', () => { if (!NM.drag) return; NM.drag = null; if (NM.sel && (NM.sel.w < 6 || NM.sel.h < 6)) NM.sel = null; renderNM(); if (NM.sel) $('ntext').focus(); });
+  const wrap = $('stwrap'), st = $('stage'); if (!wrap) return;
+  const vw = A.scan.viewport, toPt = p => ({x:Math.max(0, Math.min(vw.w, p.x/k)), y:Math.max(0, Math.min(vw.h, p.y/k))});
+  zoomable(wrap, st, {max:5, init:NM.view, onChange:T => { NM.view = {z:T.z, x:T.x, y:T.y}; },
+    mode: () => NM.mode==='tap' ? 'tap' : 'draw',
+    tap: lp => { if (NM.mode!=='tap') return; keepText(); const p = toPt(lp); NM.stack = hitAll(p.x, p.y);
+      if (NM.stack.length) { pickPart(0); renderNM(); if (!isPhone()) $('ntext').focus(); } },
+    hover: lp => { if (NM.mode!=='tap' || NM.sel) return; const p = toPt(lp), h = hitEl(p.x, p.y); if (h !== NM.hover) { NM.hover = h; paintNM(); } },
+    drag: {
+      start: lp => { keepText(); NM.drag = toPt(lp); NM.el = null; NM.sel = null; paintNM(); },
+      move: lp => { const p = toPt(lp), a = NM.drag; if (!a) return; NM.sel = {x:Math.round(Math.min(a.x,p.x)), y:Math.round(Math.min(a.y,p.y)), w:Math.round(Math.abs(p.x-a.x)), h:Math.round(Math.abs(p.y-a.y))}; paintNM(); },
+      end: () => { NM.drag = null; if (NM.sel && (NM.sel.w < 6 || NM.sel.h < 6)) NM.sel = null; renderNM(); if (NM.sel && !isPhone()) $('ntext').focus(); },
+      cancel: () => { NM.drag = null; NM.sel = null; paintNM(); }
+    }});
 }
 function keepText(){ const t = $('ntext'); if (t) NM.text = t.value; }
 // one note, in note format v1 (SHARED.md), plus the Atlas's own fields
@@ -846,7 +1041,7 @@ function renderMap(){
   const labs = S.mapLabels ? E.map(e => { const m = mid(e); const t = e.labels.length>1 ? short(e.labels[0])+' +'+(e.labels.length-1) : short(e.labels[0]||'');
       return '<span class="elabel'+(e.kind===DOOR?' door':e.kind==='Opens a sheet'?' sheet':'')+'" style="left:'+Math.round(m.x)+'px;top:'+Math.round(m.y)+'px" title="'+esc(e.labels.join(' · '))+'">'+esc(t)+'</span>'; }).join('') : '';
   $('map').innerHTML =
-    '<div class="mapin" id="mapin" style="width:'+W+'px;height:'+H+'px;transform:translate('+MV.x+'px,'+MV.y+'px) scale('+MV.k+')">'+
+    '<div class="mapin" id="mapin" style="width:'+W+'px;height:'+H+'px;transform:translate3d('+(RV||MV).x+'px,'+(RV||MV).y+'px,0) scale('+(RV||MV).k+')">'+
       L.regions.map(r=>'<div class="region" style="left:'+r.x+'px;top:'+r.y+'px;width:'+r.w+'px;height:'+r.h+'px"><span>'+esc(r.name)+'</span></div>').join('')+
       '<svg class="lines" width="'+W+'" height="'+H+'" style="position:absolute;left:0;top:0;overflow:visible" aria-hidden="true"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8e8e96"/></marker></defs>'+
         E.map(e=>'<path class="'+cls(e)+'" d="'+path(e)+'" marker-end="url(#ah)"/>').join('')+
@@ -856,50 +1051,133 @@ function renderMap(){
       labs+
       (LAYOUT.labels||[]).map((l,i)=>'<div class="mlabel" data-lab="'+i+'" style="left:'+l.x+'px;top:'+l.y+'px"><span class="grip" data-lgrip="'+i+'" aria-label="Move label"></span><div contenteditable="true" data-ltext="'+i+'" role="textbox" aria-label="Label text">'+esc(l.text)+'</div></div>').join('')+
     '</div>'+
-    '<div class="mtools" style="left:12px;top:12px;flex-wrap:wrap;max-width:calc(100% - 24px)"><span class="note" style="margin-right:4px">Show</span>'+
+    '<div class="mtools mobonly" style="left:12px;top:12px"><button class="btn sm" id="mopts" aria-expanded="'+!!S.mapOpts+'">Map options</button><button class="btn sm" id="mkey" aria-expanded="'+!!S.mapKey+'">Key</button></div>'+
+    '<div class="mtools mbar'+(S.mapOpts?' open':'')+'" style="left:12px;top:12px;flex-wrap:wrap;max-width:calc(100% - 24px)"><span class="note" style="margin-right:4px">Show</span>'+
       ['Button','Opens a sheet','Back','Tab bar',DOOR].map(k=>'<button class="chip" data-mk="'+esc(k)+'" aria-pressed="'+!!S.mapKinds[k]+'">'+esc(k)+'</button>').join('')+
       '<span style="width:1px;height:20px;background:var(--line2);margin:0 4px"></span><button class="chip" id="mapLabels" aria-pressed="'+S.mapLabels+'" title="Show what’s tapped on every line">Labels</button><button class="btn sm" id="addLabel">+ Note label</button>'+
       '<button class="btn sm" id="resetLayout" '+(moved||(LAYOUT.labels||[]).length?'':'disabled')+'>'+(S.confirmReset?'Sure? Reset':'Tidy layout')+'</button></div>'+
-    '<div class="mtools legend" style="left:12px;bottom:12px;flex-wrap:wrap"><span><i></i>Button</span><span><i style="border-color:var(--teal)"></i>Opens a sheet</span><span><i style="border-top-style:dashed"></i>Back</span><span><i style="border-color:#4a4a52"></i>Tab bar</span><span><i class="door"></i>'+DOOR+'</span></div>'+
-    '<div class="mtools" style="right:12px;bottom:12px"><button class="ib" id="zout" aria-label="Zoom out">−</button><span id="zpct" style="min-width:40px;text-align:center">'+Math.round(MV.k*100)+'%</span><button class="ib" id="zin" aria-label="Zoom in">+</button><button class="btn sm" id="zfit">Fit all</button></div>';
+    '<div class="mtools legend mlegend'+(S.mapKey?' open':'')+'" style="left:12px;bottom:12px;flex-wrap:wrap"><span><i></i>Button</span><span><i style="border-color:var(--teal)"></i>Opens a sheet</span><span><i style="border-top-style:dashed"></i>Back</span><span><i style="border-color:#4a4a52"></i>Tab bar</span><span><i class="door"></i>'+DOOR+'</span></div>'+
+    '<div class="mtools" style="right:12px;bottom:12px"><span class="note mobonly" style="padding:0 4px">Pinch to zoom</span><button class="ib" id="zout" aria-label="Zoom out">−</button><span id="zpct" style="min-width:40px;text-align:center">'+Math.round((RV||MV).k*100)+'%</span><button class="ib" id="zin" aria-label="Zoom in">+</button><button class="btn sm" id="zfit">Fit all</button></div>';
 }
-function applyMV(){ const m = $('mapin'); if (m) m.style.transform = 'translate('+MV.x+'px,'+MV.y+'px) scale('+MV.k+')'; const z = $('zpct'); if (z) z.textContent = Math.round(MV.k*100)+'%'; store.set('mapview', MV); }
-function zoomAt(f, cx, cy){ const k = Math.max(.2, Math.min(2, MV.k*f)); MV.x = cx - (cx-MV.x)*k/MV.k; MV.y = cy - (cy-MV.y)*k/MV.k; MV.k = k; applyMV(); }
-function fitMap(){ const L = autoLayout(), P = Object.assign({}, L.pos, LAYOUT.pos||{}); const ps = Object.values(P); if (!ps.length) return;
+// MV is where the map is going; RV is what's on screen. Drawn once per screen refresh; moves you didn't make with
+// your fingers (buttons, double-tap, fit, the edges after a pinch) glide there.
+const KMIN = .2, KMAX = 2.5;
+let RV = null, mvAnim = 0, mvFrame = 0, mvSave = 0;
+function drawMV(){ mvFrame = 0; const m = $('mapin'); if (!m || !RV) return;
+  m.style.transform = 'translate3d('+RV.x+'px,'+RV.y+'px,0) scale('+RV.k+')';
+  m.classList.add('moving'); clearTimeout(m._mv); m._mv = setTimeout(() => m.classList.remove('moving'), 180);
+  const z = $('zpct'); if (z) z.textContent = Math.round(RV.k*100)+'%'; }
+function stopMV(){ if (mvAnim) { cancelAnimationFrame(mvAnim); mvAnim = 0; if (RV) Object.assign(MV, RV); } }
+function applyMV(anim, an){
+  clearTimeout(mvSave); mvSave = setTimeout(() => store.set('mapview', {x:MV.x, y:MV.y, k:MV.k}), 400);
+  if (mvAnim) { cancelAnimationFrame(mvAnim); mvAnim = 0; }
+  if (!anim || !RV) { RV = {x:MV.x, y:MV.y, k:MV.k}; if (!mvFrame) mvFrame = requestAnimationFrame(drawMV); return; }
+  const a = Object.assign({}, RV), b = {x:MV.x, y:MV.y, k:MV.k}, t0 = performance.now(), ms = typeof anim === 'number' ? anim : 320;
+  const step = now => { const p = Math.min(1, (now-t0)/ms), e = ease(p), k = a.k*Math.pow(b.k/a.k, e);
+    RV = an ? {k, x:an.mx-an.wx*k + (b.x-(an.mx-an.wx*b.k))*e, y:an.my-an.wy*k + (b.y-(an.my-an.wy*b.k))*e}
+            : {k, x:a.x+(b.x-a.x)*e, y:a.y+(b.y-a.y)*e};
+    drawMV(); mvAnim = p < 1 ? requestAnimationFrame(step) : 0; };
+  mvAnim = requestAnimationFrame(step);
+}
+function zoomAt(f, cx, cy, now){ stopMV(); const k = Math.max(KMIN, Math.min(KMAX, MV.k*f)), an = {mx:cx, my:cy, wx:(cx-MV.x)/MV.k, wy:(cy-MV.y)/MV.k};
+  MV.x = cx - an.wx*k; MV.y = cy - an.wy*k; MV.k = k; applyMV(!now, an); }
+function fitMap(){ stopMV(); const L = autoLayout(), P = Object.assign({}, L.pos, LAYOUT.pos||{}); const ps = Object.values(P); if (!ps.length) return;
   const x1 = Math.min(...ps.map(p=>p.x))-60, y1 = Math.min(...ps.map(p=>p.y))-60, x2 = Math.max(...ps.map(p=>p.x))+160, y2 = Math.max(...ps.map(p=>p.y))+300;
   const r = $('map').getBoundingClientRect(); MV.k = Math.max(.2, Math.min(1, Math.min(r.width/(x2-x1), (r.height-60)/(y2-y1)))); const top = (document.querySelector('#map .mtools')||{offsetHeight:40}).offsetHeight + 24;
-  MV.k = Math.max(.2, Math.min(1, Math.min(r.width/(x2-x1), (r.height-top-60)/(y2-y1)))); MV.x = -x1*MV.k + (r.width-(x2-x1)*MV.k)/2; MV.y = -y1*MV.k + top; applyMV(); }
+  MV.k = Math.max(.2, Math.min(1, Math.min(r.width/(x2-x1), (r.height-top-60)/(y2-y1)))); MV.x = -x1*MV.k + (r.width-(x2-x1)*MV.k)/2; MV.y = -y1*MV.k + top; applyMV(true); }
+function fitFirst(){
+  const L = autoLayout(), reg = L.regions[0]; if (!reg) return fitMap();
+  const r = $('map').getBoundingClientRect(), top = 68;
+  stopMV(); MV.k = Math.max(.45, Math.min(.9, (r.width-24)/reg.w)); MV.x = 12 - reg.x*MV.k; MV.y = top - reg.y*MV.k; applyMV(true);
+}
+function zoomToCard(id){
+  const L = autoLayout(), p = (LAYOUT.pos||{})[id] || L.pos[id]; if (!p) return;
+  stopMV(); const r = $('map').getBoundingClientRect(); MV.k = isPhone() ? 1.1 : 1;
+  MV.x = r.width/2 - (p.x+48)*MV.k; MV.y = r.height/2 - (p.y+110)*MV.k; applyMV(true);
+}
 function wireMap(){
   const m = $('map');
   m.addEventListener('wheel', e => { e.preventDefault(); const r = m.getBoundingClientRect();
-    if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-e.deltaY*0.01), e.clientX-r.left, e.clientY-r.top); else { MV.x -= e.deltaX; MV.y -= e.deltaY; applyMV(); } }, {passive:false});
+    if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-e.deltaY*0.01), e.clientX-r.left, e.clientY-r.top, true); else { stopMV(); MV.x -= e.deltaX; MV.y -= e.deltaY; applyMV(); } }, {passive:false});
+  const PT = new Map(); let lastTap = null, trail = [];
+  noPageZoom(m);
+  const softK = k => k > KMAX ? KMAX*Math.pow(k/KMAX, .2) : k < KMIN ? KMIN*Math.pow(k/KMIN, .3) : k;
+  const pinchStart = () => { const [a,b] = [...PT.values()], r = m.getBoundingClientRect(), mx = (a.x+b.x)/2-r.left, my = (a.y+b.y)/2-r.top;
+    return {pinch:true, d0:Math.max(1, Math.hypot(a.x-b.x, a.y-b.y)), k0:MV.k, wx:(mx-MV.x)/MV.k, wy:(my-MV.y)/MV.k}; };
   m.addEventListener('pointerdown', e => {
     if (e.target.closest('.mtools,[contenteditable]')) return;
-    const card = e.target.closest('.mcard'), grip = e.target.closest('[data-lgrip]');
+    PT.set(e.pointerId, {x:e.clientX, y:e.clientY}); try { m.setPointerCapture(e.pointerId); } catch(x) {} stopMV();
+    trail = [{t:performance.now(), x:e.clientX, y:e.clientY}];
+    if (PT.size === 2) {   // a second finger: whatever the first was doing becomes a pinch
+      if (drag && drag.el && drag.moved && !drag.pan) renderMap();
+      if (drag && drag.hold) clearTimeout(drag.hold);
+      drag = pinchStart(); m.classList.add('panning'); e.preventDefault(); return;
+    }
+    if (PT.size > 2) return;
+    const card = e.target.closest('.mcard'), grip = e.target.closest('[data-lgrip]'), touch = e.pointerType !== 'mouse';
     if (card || grip) {
       const id = card ? card.dataset.mid : null, li = grip ? +grip.dataset.lgrip : null;
       const L = autoLayout(); const start = id ? (LAYOUT.pos[id] || L.pos[id]) : LAYOUT.labels[li];
-      drag = {id, li, sx:e.clientX, sy:e.clientY, ox:start.x, oy:start.y, moved:false, el: card || grip.parentElement};
-      m.setPointerCapture(e.pointerId); e.preventDefault(); return;
+      drag = {id, li, sx:e.clientX, sy:e.clientY, ox:start.x, oy:start.y, moved:false, el: card || grip.parentElement, mx:MV.x, my:MV.y};
+      if (touch && card) { drag.armed = false; drag.hold = setTimeout(() => { if (drag && drag.id===id && !drag.moved) { drag.armed = true; card.classList.add('lift'); if (navigator.vibrate) try { navigator.vibrate(8); } catch(x) {} } }, 380); }
+      else drag.armed = true;
+      e.preventDefault(); return;
     }
-    if (e.target.closest('.hit')) return;
-    drag = {pan:true, sx:e.clientX, sy:e.clientY, ox:MV.x, oy:MV.y, moved:false}; m.classList.add('panning'); m.setPointerCapture(e.pointerId);
+    if (e.target.closest('.hit')) { drag = {tapEdge:true, sx:e.clientX, sy:e.clientY, ox:MV.x, oy:MV.y, moved:false}; return; }
+    drag = {pan:true, sx:e.clientX, sy:e.clientY, ox:MV.x, oy:MV.y, moved:false}; m.classList.add('panning');
   });
   m.addEventListener('pointermove', e => {
-    if (!drag) return; const dx = e.clientX-drag.sx, dy = e.clientY-drag.sy;
-    if (Math.abs(dx)+Math.abs(dy) > 4) drag.moved = true;
-    if (drag.pan) { MV.x = drag.ox+dx; MV.y = drag.oy+dy; applyMV(); return; }
+    if (!PT.has(e.pointerId)) return; PT.set(e.pointerId, {x:e.clientX, y:e.clientY});
+    if (!drag) return;
+    if (drag.pinch) { if (PT.size < 2) return; const [a,b] = [...PT.values()], r = m.getBoundingClientRect(), mx = (a.x+b.x)/2-r.left, my = (a.y+b.y)/2-r.top;
+      MV.k = softK(drag.k0*Math.hypot(a.x-b.x, a.y-b.y)/drag.d0); MV.x = mx-drag.wx*MV.k; MV.y = my-drag.wy*MV.k; drag.mx = mx; drag.my = my; applyMV(); return; }
+    if (drag.done) return;
+    const dx = e.clientX-drag.sx, dy = e.clientY-drag.sy;
+    if (Math.abs(dx)+Math.abs(dy) > 6) drag.moved = true;
+    if (drag.pan || drag.tapEdge || (drag.el && !drag.armed)) {   // moving the map (a card not yet held moves the map too)
+      if (drag.moved) { if (drag.hold) { clearTimeout(drag.hold); drag.hold = 0; } MV.x = (drag.pan||drag.tapEdge ? drag.ox : drag.mx)+dx; MV.y = (drag.pan||drag.tapEdge ? drag.oy : drag.my)+dy; applyMV();
+        trail.push({t:performance.now(), x:e.clientX, y:e.clientY}); if (trail.length > 6) trail.shift(); }
+      return;
+    }
     if (!drag.moved) return;
     const nx = Math.round(drag.ox + dx/MV.k), ny = Math.round(drag.oy + dy/MV.k);
     drag.el.style.left = nx+'px'; drag.el.style.top = ny+'px'; drag.nx = nx; drag.ny = ny;
   });
-  m.addEventListener('pointerup', e => {
-    const d = drag; drag = null; m.classList.remove('panning'); if (!d) return;
-    if (d.pan) { if (!d.moved) { const h = document.elementFromPoint(e.clientX, e.clientY); const hit = h && h.closest && h.closest('.hit'); if (hit) pickEdge(+hit.dataset.edge); else if (S.edge || S.open) { S.edge = null; S.open = null; renderDet(); renderMap(); } } return; }
-    if (!d.moved) { if (d.id) { S.edge = null; S.open = d.id; S.sel = d.id; renderDet(); renderMap(); } return; }
+  const end = e => {
+    if (!PT.has(e.pointerId)) return; PT.delete(e.pointerId);
+    const d = drag; if (!d) return;
+    if (d.pinch || d.done) { drag = PT.size ? {done:true, pinchEnd:d.pinch ? d : d.pinchEnd} : null;
+      if (!PT.size) { m.classList.remove('panning'); const pe = d.pinch ? d : d.pinchEnd;
+        if (pe && pe.mx != null && (MV.k > KMAX || MV.k < KMIN)) { const k = Math.max(KMIN, Math.min(KMAX, MV.k)), an = {mx:pe.mx, my:pe.my, wx:(pe.mx-MV.x)/MV.k, wy:(pe.my-MV.y)/MV.k};
+          MV.x = pe.mx-an.wx*k; MV.y = pe.my-an.wy*k; MV.k = k; applyMV(300, an); } }
+      return; }
+    drag = null; m.classList.remove('panning'); if (d.hold) clearTimeout(d.hold);
+    if (d.el) d.el.classList.remove('lift');
+    const touch = e.pointerType !== 'mouse';
+    if (!d.moved) {
+      // a tap: on a touch screen, wait a moment in case it's a double-tap
+      const now = Date.now(), dbl = touch && lastTap && now-lastTap.t < 320 && Math.hypot(e.clientX-lastTap.x, e.clientY-lastTap.y) < 30;
+      if (dbl) { clearTimeout(lastTap.timer); lastTap = null;
+        if (d.id) zoomToCard(d.id); else if (MV.k < .95) { const r = m.getBoundingClientRect(); zoomAt(2, e.clientX-r.left, e.clientY-r.top); } else (isPhone() ? fitFirst : fitMap)();
+        return; }
+      const act = () => {
+        if (d.tapEdge) { const h = document.elementFromPoint(e.clientX, e.clientY); const hit = h && h.closest && h.closest('.hit'); if (hit) pickEdge(+hit.dataset.edge); return; }
+        if (d.id) { S.edge = null; S.open = d.id; S.sel = d.id; renderDet(); renderMap(); return; }
+        if (d.pan && (S.edge || S.open)) { S.edge = null; S.open = null; renderDet(); renderMap(); }
+      };
+      if (touch) lastTap = {t:now, x:e.clientX, y:e.clientY, timer:setTimeout(act, 300)}; else act();
+      return;
+    }
+    if (d.pan || d.tapEdge || (d.el && !d.armed)) {   // a flick keeps the map moving for a moment
+      const a = trail[0], b = trail[trail.length-1];
+      if (a && b && performance.now()-b.t < 80) { const dt = Math.max(16, b.t-a.t), vx = (b.x-a.x)/dt, vy = (b.y-a.y)/dt;
+        if (Math.hypot(vx, vy) > 0.25) { MV.x += vx*220; MV.y += vy*220; applyMV(480); } }
+      return;
+    }
     if (d.id) LAYOUT.pos[d.id] = {x:d.nx, y:d.ny}; else LAYOUT.labels[d.li] = Object.assign({}, LAYOUT.labels[d.li], {x:d.nx, y:d.ny});
     saveLayout(); renderMap();
-  });
+  };
+  m.addEventListener('pointerup', end); m.addEventListener('pointercancel', end);
   m.addEventListener('focusout', e => { const t = e.target.closest && e.target.closest('[data-ltext]'); if (!t) return; const i = +t.dataset.ltext, v = t.textContent.trim();
     if (!LAYOUT.labels[i]) return; if (!v) LAYOUT.labels.splice(i,1); else if (v===LAYOUT.labels[i].text) return; else LAYOUT.labels[i] = Object.assign({}, LAYOUT.labels[i], {text:v}); saveLayout(); renderMap(); });
 }
@@ -919,7 +1197,7 @@ function renderFlows(){
     '<div class="flist" role="group" aria-label="Flows">'+F.map(x=>'<button class="fbtn" data-flow="'+esc(x.id)+'" aria-pressed="'+(x.id===f.id)+'"><b>'+esc(x.id)+' · '+esc(x.title)+'</b><span>'+x.steps.length+' steps'+(x.status!=='captured'?' · ▲ stopped early':'')+'</span></button>').join('')+'</div>'+
     (f.status!=='captured'?'<div class="ferr">'+esc(f.why||'This flow didn’t finish.')+' The steps before it are shown.</div>':'')+
     (f.caption?'<p class="dcap">'+esc(f.caption)+'</p>':'')+
-    '<div class="fstage"><div class="fshot"><img src="'+esc(st.shot)+'" alt="'+esc('Step '+st.n+' of '+f.title)+'">'+ring+'</div>'+
+    '<div class="fstage"><div class="fshot" data-zoom="'+esc(st.shot)+'" data-ztitle="'+esc(f.id+' · step '+st.n+(st.moment?' · '+st.moment:''))+'"><img src="'+esc(st.shot)+'" alt="'+esc('Step '+st.n+' of '+f.title)+'">'+ring+'</div>'+
       '<div class="finfo"><span class="step">Step '+st.n+' of '+(f.steps.length-1)+(st.moment?' · '+esc(st.moment):'')+'</span>'+
         '<h2>'+(s?esc(s.title):esc(st.title||'A screen not in this scan'))+'</h2>'+
         (s&&s.sid?'<span class="sid">'+esc(s.sid)+'</span>':'')+
@@ -927,7 +1205,7 @@ function renderFlows(){
         (st.label&&S.step>0?'<p class="note" style="margin:0">Got here by: '+esc(st.label)+'</p>':'')+
         (nx?'<span class="tap">Next: '+esc(nx.label||'next step')+'</span>':'<span class="note">End of the flow.</span>')+
         '<div class="fnav"><button class="btn" data-fgo="-1" '+(S.step<=0?'disabled':'')+'>‹ Back</button><button class="btn pri" data-fgo="1" '+(!nx?'disabled':'')+'>Next ›</button>'+
-        (s?'<button class="btn" data-lb="'+esc(s.id)+'">Open in the Lightbox</button>':'')+'</div>'+
+        (s?'<button class="btn" data-lb="'+esc(s.id)+'"><span class="deskonly">Open in the Lightbox</span><span class="mobonly">Lightbox</span></button>':'')+'</div>'+
         '<p class="note" style="margin:0">Saved screenshots from the scan of '+esc(A.scan.version)+', not live. ← → step through.</p></div></div>'+
     '<div class="strip" aria-label="Steps">'+f.steps.map((x,i)=>(i?'<span class="arrow">'+esc(x.label||'')+'</span>':'')+
       '<button class="sth" data-fstep="'+i+'" data-flow="'+esc(f.id)+'" aria-current="'+(i===S.step)+'" aria-label="Step '+x.n+'"><div class="th"><img loading="lazy" src="'+esc(x.shot)+'" alt=""></div><small>'+x.n+(x.moment?' · '+esc(x.moment):'')+'<br>'+esc((byId[x.screen]||{}).title||x.title||'')+'</small></button>').join('')+'</div>';
@@ -936,11 +1214,11 @@ function renderFlows(){
 // ---------- render ----------
 function setView(v){
   if (v==='flows' && !(A.flows||[]).length && S.view!=='flows') v = v;
-  S.view = v; save();
+  S.view = v; save(); document.body.dataset.view = v;
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.view===v));
   $('main').hidden = v!=='lightbox'; $('map').hidden = v!=='map'; $('flows').hidden = v!=='flows';
   $('keys').textContent = v==='map' ? 'Drag to move around · Ctrl/⌘ + scroll to zoom · drag a card to place it · click a line for its details' : v==='flows' ? '← → step through · Esc close' : '/ search · arrows move · Enter open · Esc close · F full length · N note';
-  if (v==='map') { renderMap(); if (!store.get('mapview', null)) setTimeout(fitMap, 30); } else if (v==='flows') renderFlows(); else renderMain();
+  if (v==='map') { renderMap(); if (!store.get('mapview', null)) setTimeout(isPhone() ? fitFirst : fitMap, 30); } else if (v==='flows') renderFlows(); else renderMain();
 }
 function renderView(){ if (S.view==='map') renderMap(); else if (S.view==='flows') renderFlows(); else renderMain(); }
 function refreshAll(){ renderNotesBtn(); renderSide(); if (S.view==='map') { if (!drag && !(document.activeElement && document.activeElement.isContentEditable)) renderMap(); } else renderView(); if (!S.edge && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#pform'))) renderDet(); renderDrawer(); if ($('xbg').classList.contains('open')) renderExport(); }
@@ -948,8 +1226,7 @@ function render(){ renderSide(); renderView(); renderDet(); renderDrawer(); save
 
 function openFull(){
   const s = byId[S.open]; if (!s || s.status!=='captured') return;
-  $('fimg').src = s.full; $('fimg').alt = s.title+' full length'; $('ftitle').textContent = s.title;
-  $('fsub').textContent = 'Full length · saved '+fmtWhen(A.scan.at); $('full').classList.add('open'); $('fclose').focus();
+  openZoom({src:s.full, title:s.title, sub:'Full length · saved '+fmtWhen(A.scan.at), top:true});
 }
 function select(id, open){
   S.sel = id; S.edge = null; if (open) S.open = id;
@@ -959,6 +1236,8 @@ function select(id, open){
 }
 
 document.addEventListener('click', e => {
+  const zp = e.target.closest('[data-zoom]');
+  if (zp && !e.target.closest('button,input,a')) { openZoom({src:zp.dataset.zoom, title:zp.dataset.ztitle||''}); return; }
   const t = e.target.closest('button,[data-id]'); if (!t) { if (!e.target.closest('.pop,#rescan')) $('pop').classList.remove('open'); return; }
   if (t.id==='rescan') { $('pop').classList.toggle('open'); return; }
   if (t.dataset.view) { setView(t.dataset.view); return; }
@@ -976,7 +1255,13 @@ document.addEventListener('click', e => {
   if (t.dataset.t) { S[t.dataset.t] = !S[t.dataset.t]; renderDet(); save(); return; }
   if (t.id==='dclose') { S.open=null; S.edge=null; renderDet(); if (S.view==='map') renderMap(); try{history.replaceState(null,'',location.pathname)}catch(e){}; return; }
   if (t.id==='dfull'||t.id==='dfull2') { openFull(); return; }
-  if (t.id==='fclose') { $('full').classList.remove('open'); return; }
+  if (t.id==='zclose') { closeZoom(); return; }
+  if (t.dataset.zwipe) { const w = WIPES[t.dataset.zwipe]; if (w) openZoom({under:w.under, over:w.over, a:w.a, b:w.b, title:(byId[S.open]||{}).title||'', sub:w.a+' ↔ '+w.b}); return; }
+  if (t.id==='searchBtn') { $('q').closest('header').classList.add('searching'); $('q').focus(); return; }
+  if (t.id==='searchX') { e.preventDefault(); $('q').closest('header').classList.remove('searching'); if (S.q) { S.q=''; $('q').value=''; renderView(); } return; }
+  if (t.id==='bfold') { S.bannerOpen = !S.bannerOpen; renderMain(); return; }
+  if (t.id==='mopts') { S.mapOpts = !S.mapOpts; renderMap(); return; }
+  if (t.id==='mkey') { S.mapKey = !S.mapKey; renderMap(); return; }
   if (t.id==='clearf') { Object.assign(S,{area:null,status:null,kind:null,q:'',onlyChanged:false,sinceOnly:''}); $('q').value=''; render(); return; }
   if (t.id==='addNote') { openNote(S.open); return; }
   if (t.id==='plist') { S.listing = S.open; renderDet(); const i = $('plink'); if (i) i.focus(); return; }
@@ -990,8 +1275,8 @@ document.addEventListener('click', e => {
   if (t.id==='xcopy') { const l = NOTES.filter(n=>XSEL.has(n.id)); copyText(reportMd(l), 'Report').then(ok=>ok&&afterHandOff(l)); return; }
   if (t.id==='xqueue') { const l = NOTES.filter(n=>XSEL.has(n.id)); copyText(queueMd(l), 'Queue ideas').then(ok=>ok&&afterHandOff(l)); return; }
   if (t.id==='xzip') { downloadZip(NOTES.filter(n=>XSEL.has(n.id))); return; }
-  if (t.id==='nmClose'||t.id==='nmCancel') { closeNM(); return; }
-  if (t.dataset.nmm) { keepText(); NM.mode = t.dataset.nmm; NM.sel = null; NM.el = null; NM.hover = null; renderNM(); return; }
+  if (t.id==='nmClose'||t.id==='nmCancel'||t.id==='nmCancel2') { closeNM(); return; }
+  if (t.dataset.nmm) { keepText(); NM.mode = t.dataset.nmm; NM.sel = null; NM.el = null; NM.hover = null; NM.stack = null; renderNM(); return; }
   if (t.dataset.part) { keepText(); pickPart(NM.idx + (+t.dataset.part)); renderNM(); return; }
   if (t.dataset.nk) { keepText(); NM.kind = NM.kind===t.dataset.nk ? '' : t.dataset.nk; renderNM(); return; }
   if (t.dataset.mk) { S.mapKinds[t.dataset.mk] = !S.mapKinds[t.dataset.mk]; save(); renderMap(); return; }
@@ -1016,8 +1301,8 @@ $('size').addEventListener('input', e => { S.size = +e.target.value; document.do
 document.addEventListener('keydown', e => {
   const ae = document.activeElement, typing = (/INPUT|TEXTAREA|SELECT/.test(ae.tagName) && !/checkbox|range/.test(ae.type)) || ae.isContentEditable;
   if (e.key==='Escape') {
-    if (NM) closeNM(); else if ($('xbg').classList.contains('open')) $('xbg').classList.remove('open'); else if ($('full').classList.contains('open')) $('full').classList.remove('open');
-    else if ($('pop').classList.contains('open')) $('pop').classList.remove('open'); else if (typing) ae.blur(); else if (S.drawer) { S.drawer=false; renderDrawer(); }
+    if (NM) closeNM(); else if ($('xbg').classList.contains('open')) $('xbg').classList.remove('open'); else if ($('zoomv').classList.contains('open')) closeZoom();
+    else if ($('pop').classList.contains('open')) $('pop').classList.remove('open'); else if (typing) { ae.blur(); ae.closest('header') && ae.closest('header').classList.remove('searching'); } else if (S.drawer) { S.drawer=false; renderDrawer(); }
     else if (S.open||S.edge) { S.open=null; S.edge=null; renderDet(); if (S.view==='map') renderMap(); else if (S.sel && S.view==='lightbox') select(S.sel,false); }
     return; }
   if (NM && e.key==='Enter' && (e.metaKey||e.ctrlKey)) { e.preventDefault(); submitNote(); return; }
@@ -1037,6 +1322,25 @@ document.addEventListener('keydown', e => {
   }
   if (e.key==='Enter' && S.sel && !S.open && ae.classList.contains('card')) { e.preventDefault(); select(S.sel, true); }
 });
+function swipe(el, fn, skip){
+  let s0 = null;
+  el.addEventListener('touchstart', e => { if (e.touches.length !== 1 || (skip && e.target.closest(skip))) { s0 = null; return; } const t = e.touches[0]; s0 = {x:t.clientX, y:t.clientY, at:Date.now(), top:el.scrollTop}; }, {passive:true});
+  el.addEventListener('touchend', e => { if (!s0) return; const t = e.changedTouches[0], dx = t.clientX-s0.x, dy = t.clientY-s0.y, a = s0; s0 = null;
+    if (Date.now()-a.at > 700) return;
+    if (Math.abs(dx) > 70 && Math.abs(dx) > 2*Math.abs(dy)) fn(dx < 0 ? 'left' : 'right');
+    else if (dy > 110 && Math.abs(dy) > 2*Math.abs(dx) && a.top <= 0) fn('down'); }, {passive:true});
+}
+swipe($('det'), dir => { if (!isPhone() || S.edge) return;
+  if (dir==='down') { S.open = null; renderDet(); if (S.view==='map') renderMap(); return; }
+  const l = visible(), i = l.findIndex(x=>x.id===S.open) + (dir==='left' ? 1 : -1); if (l[i]) { select(l[i].id, true); $('det').scrollTop = 0; } }, 'input,.wipe,.cmp,select,textarea,.pform');
+swipe($('flows'), dir => { if (dir==='down') return; const f = (A.flows||[]).find(x=>x.id===S.flow); if (!f) return;
+  const n = S.step + (dir==='left' ? 1 : -1); if (n >= 0 && n < f.steps.length) { S.step = n; renderFlows(); } }, '.strip,.flist');
+(() => { let p0 = null; const m = $('main');
+  m.addEventListener('touchstart', e => { if (e.touches.length === 2) { const [a,b] = e.touches; p0 = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY); } }, {passive:true});
+  m.addEventListener('touchmove', e => { if (!p0 || e.touches.length !== 2 || !isPhone()) return; const [a,b] = e.touches, d = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
+    if (d/p0 > 1.3 || d/p0 < 0.77) { S.cols = Math.max(2, Math.min(4, (S.cols||3) + (d > p0 ? -1 : 1))); p0 = d; document.documentElement.style.setProperty('--cols', S.cols); save(); } }, {passive:true});
+  m.addEventListener('touchend', e => { if (e.touches.length < 2) p0 = null; }, {passive:true});
+})();
 window.addEventListener('resize', () => { if (NM) { keepText(); renderNM(); } sizeWipes(); });
 
 fetch('atlas.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(data => {
@@ -1057,7 +1361,7 @@ fetch('atlas.json').then(r => { if (!r.ok) throw new Error(r.status); return r.j
   const cap = A.screens.filter(s=>s.status==='captured').length, nb = A.screens.reduce((n,s)=>n+s.links.length,0);
   const seen = A.screens.reduce((n,s)=>n+s.links.filter(l=>l.how==='seen').length,0);
   $('foot1').textContent = cap+' captured · '+A.screens.filter(s=>s.status==='failed').length+' failed · '+A.screens.filter(s=>s.status==='uncaptured').length+' found in code only · '+nb+' buttons, '+seen+' seen working · '+A.flows.length+' flows · '+A.scan.viewport.name+' · Atlas kit '+(A.kit||KIT_VERSION);
-  $('size').value = S.size; document.documentElement.style.setProperty('--thumb', S.size+'px');
+  $('size').value = S.size; document.documentElement.style.setProperty('--thumb', S.size+'px'); document.documentElement.style.setProperty('--cols', S.cols||3);
   const h = decodeURIComponent(location.hash.replace(/^#s-/, '')), hid = screenOf(h); if (hid) { S.sel = S.open = hid; if (S.view==='flows') S.view='lightbox'; }
   wireMap(); renderNotesBtn(); render(); setView(S.view);
   connectDb();

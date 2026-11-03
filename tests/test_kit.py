@@ -1,12 +1,14 @@
 """Tests for the Atlas kit: the scanner, the viewer and "check my notes", on two made-up apps.
 
     python3 tests/test_kit.py                 everything (about 2 minutes)
-    python3 tests/test_kit.py names shared    only some parts: names, shared, site, state, compare, viewer, notes
+    python3 tests/test_kit.py names shared    only some parts: names, shared, site, state, compare, viewer, phone, notes
 
 - tests/apps/site: a made-up website (pages with addresses).
 - tests/apps/state: a made-up app of screens without addresses, with screen IDs, a flow, a hand-written door and
   captions; its "version 2" (made in a temporary copy) renames a code key, adds a screen with no ID, lists a screen
   the scan can't find and changes how Home looks.
+- phone: the viewer at iPhone 15 Pro size with real touch events (pinch, double-tap, swipes, hold-to-move), plus the
+  computer's extras (trackpad pinch, animated map buttons).
 - With the Prototype kit beside this repo (../prototype-kit, or PROTOTYPE_KIT=path), a real Prototype kit page is
   also captured as a proposed screen. Without it, a stand-in page is used.
 
@@ -337,6 +339,272 @@ def t_viewer(tmp, s1, s2):
     return store
 
 
+# ---------- on a phone (1.1): real touch events at iPhone 15 Pro size ----------
+class Touch:
+    """Real touch events through the browser's own input (they arrive as touches and as pointers, like on a phone)."""
+    def __init__(self, pg):
+        self.pg, self.c = pg, pg.context.new_cdp_session(pg)
+
+    def send(self, kind, pts):
+        self.c.send('Input.dispatchTouchEvent', {'type': kind, 'touchPoints': [{'x': x, 'y': y, 'id': i} for i, (x, y) in enumerate(pts)]})
+
+    def tap(self, x, y):
+        self.send('touchStart', [(x, y)]); self.send('touchEnd', [])
+
+    def dbl(self, x, y):
+        self.tap(x, y); self.pg.wait_for_timeout(90); self.tap(x, y)
+
+    def drag(self, a, b, steps=10, ms=200, hold=0, wait_end=True):
+        self.send('touchStart', [a])
+        if hold: self.pg.wait_for_timeout(hold)
+        for i in range(1, steps + 1):
+            t = i / steps
+            self.send('touchMove', [(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)])
+            if ms: self.pg.wait_for_timeout(ms / steps)
+        self.send('touchEnd', [])
+
+    def pinch(self, c, d0, d1, steps=12, ms=240, lift=True, upright=False):
+        at = (lambda d: [(c[0], c[1] - d / 2), (c[0], c[1] + d / 2)]) if upright else (lambda d: [(c[0] - d / 2, c[1]), (c[0] + d / 2, c[1])])
+        self.send('touchStart', at(d0))
+        for i in range(1, steps + 1):
+            self.send('touchMove', at(d0 + (d1 - d0) * i / steps))
+            if ms: self.pg.wait_for_timeout(ms / steps)
+        if lift: self.send('touchEnd', [])
+
+
+def centre(pg, sel):
+    pg.locator(sel).first.scroll_into_view_if_needed()
+    b = pg.locator(sel).first.bounding_box()
+    return (b['x'] + b['width'] / 2, b['y'] + b['height'] / 2)
+
+
+SCALE_JS = """sel => { const m = (document.querySelector(sel).style.transform||'').match(/translate3d\\(([-\\d.e]+)px,\\s*([-\\d.e]+)px[^)]*\\)\\s*scale\\(([-\\d.e]+)\\)/);
+  return m ? {x:+m[1], y:+m[2], z:+m[3]} : {x:0, y:0, z:1}; }"""
+# 40 two-finger moves arriving faster than the screen refreshes (as a phone sends them), then how often the picture
+# was redrawn: once per refresh means at most one or two draws
+BURST_JS = """async ([sel, area, x, y]) => { const el = document.querySelector(sel), ar = document.querySelector(area); let w = 0;
+  const mo = new MutationObserver(r => { w += r.length; }); mo.observe(el, {attributes:true, attributeFilter:['style']});
+  const ev = (t, id, cx) => ar.dispatchEvent(new PointerEvent(t, {pointerId:id, pointerType:'touch', isPrimary:id===11, clientX:cx, clientY:y, bubbles:true, cancelable:true}));
+  ev('pointerdown', 11, x-40); ev('pointerdown', 12, x+40);
+  for (let i = 1; i <= 40; i++) { ev('pointermove', 11, x-40-i); ev('pointermove', 12, x+40+i); }
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const n = w; ev('pointerup', 11, x-80); ev('pointerup', 12, x+80); mo.disconnect(); return n; }"""
+
+
+def phone_page(b, url, preset=None):
+    ctx = b.new_context(**PHONE)
+    pg = ctx.new_page()
+    errs = []
+    pg.on('pageerror', lambda e: errs.append(str(e)))
+    pg.on('console', lambda m: errs.append(m.text) if m.type == 'error' and 'Failed to load resource' not in m.text else None)
+    if preset is not None: pg.add_init_script('window.__preset = ' + json.dumps(json.dumps(preset)) + ';')
+    pg.add_init_script(FAKE_STORE)
+    pg.goto(url)
+    pg.wait_for_selector('.card')
+    pg.wait_for_timeout(250)
+    return pg, errs, Touch(pg)
+
+
+PHONE = {}   # filled from Playwright's iPhone 15 Pro (393 × 659, touch, a phone's browser) when the phone checks start
+
+
+def t_phone(tmp, s1, s2, store):
+    print('On a phone (iPhone 15 Pro size, real touch events)')
+    from playwright.sync_api import sync_playwright
+    v1, v2 = Serve(s1), Serve(s2)
+    a1 = json.load(open(os.path.join(s1, 'atlas.json')))
+    try:
+        with sync_playwright() as p:
+            d = p.devices['iPhone 15 Pro']
+            PHONE.update({k: d[k] for k in ('viewport', 'device_scale_factor', 'is_mobile', 'has_touch', 'user_agent')})
+            VW, VH = d['viewport']['width'], d['viewport']['height']
+            b = p.chromium.launch()
+
+            # --- the top, the bottom bar, tap targets, banners and search (version 2 has changes to fold away)
+            pg, errs, T = phone_page(b, v2.url, preset=store)
+            hb = pg.locator('header').bounding_box()
+            ok(hb['height'] <= 64, f'the top is one row ({hb["height"]:.0f} pt)')
+            bar = pg.locator('.seg.views').bounding_box()
+            ok(abs(bar['y'] + bar['height'] - VH) < 1 and pg.locator('.seg.views button').count() == 3, 'Lightbox · Map · Flows sit in a bar along the bottom')
+            small = pg.evaluate("""() => [...document.querySelectorAll('header button, header input, header select, .mchips button, .mchips select, .seg.views button, .bfold')]
+              .filter(e => e.offsetParent && getComputedStyle(e).visibility !== 'hidden').map(e => [e.id || e.textContent.trim().slice(0, 18), e.getBoundingClientRect()])
+              .filter(([n, r]) => r.height < 43.5 || r.width < 43.5).map(([n, r]) => n + ' ' + Math.round(r.width) + '×' + Math.round(r.height))""")
+            ok(not small, 'every control at the top, in the filters and in the bottom bar is at least 44 pt' + (' (' + ', '.join(small[:4]) + ')' if small else ''))
+            ok(pg.locator('#bfold', has_text='changed since the last scan').count() == 1 and pg.locator('#main .banner').count() == 0, 'the changes banner is folded to one line')
+            T.tap(*centre(pg, '#bfold')); pg.wait_for_timeout(150)
+            ok(pg.locator('#main .banner').count() >= 1 and 'Fold these away' in pg.inner_text('#bfold'), 'tapping it opens the banners, with “Fold these away”')
+            ok(pg.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'nothing scrolls sideways')
+            T.tap(*centre(pg, '#searchBtn')); pg.wait_for_timeout(150)
+            ok(pg.evaluate("document.querySelector('header').classList.contains('searching') && document.activeElement.id === 'q'"), 'the search icon opens search over the top row')
+            pg.keyboard.type('TL-005'); pg.wait_for_timeout(150)
+            ok([c.get_attribute('data-id') for c in pg.locator('.card').all()] == ['TL-005'], 'search finds a screen by its ID')
+            T.tap(*centre(pg, '#searchX')); pg.wait_for_timeout(150)
+            ok(pg.evaluate("!document.querySelector('header').classList.contains('searching') && !document.getElementById('q').value") and pg.locator('.card').count() > 3, 'Cancel closes search and clears it')
+            pg.context.close()
+
+            # --- the Lightbox grid, details swipes and the zoom viewer
+            pg, errs, T = phone_page(b, v1.url, preset=store)
+            cols = lambda: pg.evaluate("getComputedStyle(document.querySelector('.grid')).gridTemplateColumns.split(' ').length")
+            ok(cols() == 3, 'the grid starts at 3 columns')
+            c = (VW / 2, VH * 0.45)
+            T.pinch(c, 90, 150); pg.wait_for_timeout(150)
+            n2 = cols()
+            T.pinch(c, 150, 100); pg.wait_for_timeout(100); T.pinch(c, 150, 100); pg.wait_for_timeout(150)
+            n4 = cols()
+            ok((n2, n4) == (2, 4), f'pinching the grid gives 2, then 4 columns ({n2}, {n4})')
+            pg.reload(); pg.wait_for_selector('.card'); pg.wait_for_timeout(200)
+            ok(cols() == 4, 'the number of columns is remembered on the device')
+            T.pinch(c, 100, 150); pg.wait_for_timeout(150)
+            vis = pg.evaluate('visible().map(s => s.id)')
+            T.tap(*centre(pg, '.card[data-id="%s"]' % vis[1])); pg.wait_for_timeout(200)
+            ok(pg.locator('#det.open').count() == 1, 'one tap on a card opens its details')
+            mid = (VW / 2, VH * 0.4)
+            T.drag((VW * 0.8, mid[1]), (VW * 0.2, mid[1]), ms=120); pg.wait_for_timeout(200)
+            after_l = pg.evaluate('S.open')
+            T.drag((VW * 0.2, mid[1]), (VW * 0.8, mid[1]), ms=120); pg.wait_for_timeout(200)
+            after_r = pg.evaluate('S.open')
+            ok((after_l, after_r) == (vis[2], vis[1]), f'in details, swipe left for the next screen and right for the one before ({after_l}, {after_r})')
+            T.drag((VW / 2, VH * 0.25), (VW / 2, VH * 0.75), ms=150); pg.wait_for_timeout(200)
+            ok(pg.locator('#det.open').count() == 0, 'swipe down closes the details')
+            # the zoom viewer, from Full length
+            T.tap(*centre(pg, '.card[data-id="TL-001"]')); pg.wait_for_timeout(200)
+            T.tap(*centre(pg, '#dfull')); pg.wait_for_selector('#zoomv.open'); pg.wait_for_timeout(250)
+            z = lambda: pg.evaluate(SCALE_JS, '#zin')['z']
+            za = pg.locator('#zarea').bounding_box(); zc = (za['x'] + za['width'] / 2, za['y'] + za['height'] * 0.35)
+            ok(abs(z() - 1) < 0.01, 'Full length opens in the zoom viewer, at full width')
+            T.pinch(zc, 80, 200); pg.wait_for_timeout(450)
+            ok(2.2 < z() < 2.8, f'pinching zooms the picture ({z():.2f}×)')
+            T.dbl(*zc); pg.wait_for_timeout(500)
+            n = pg.evaluate(BURST_JS, ['#zin', '#zarea', zc[0], zc[1]]); pg.wait_for_timeout(450)
+            ok(1 <= n <= 2, f'drawn once per screen refresh: {n} draw(s) for 40 finger moves in one moment')
+            T.pinch(zc, 30, 300, lift=False); pg.wait_for_timeout(60)
+            past = z(); T.send('touchEnd', []); pg.wait_for_timeout(550)
+            ok(past > 6.05 and abs(z() - 6) < 0.02, f'pinching past the 6× limit gives a little ({past:.2f}×) and eases back to 6× when you let go')
+            T.dbl(*zc); pg.wait_for_timeout(600)
+            ok(abs(z() - 1) < 0.02, 'double-tap when zoomed in goes back to full width')
+            T.dbl(*zc); pg.wait_for_timeout(110)
+            midz = z(); pg.wait_for_timeout(500)
+            ok(1.05 < midz < 2.45 and abs(z() - 2.5) < 0.02, f'double-tap zooms to 2.5×, animated (half-way {midz:.2f}×)')
+            T.tap(*centre(pg, '#zclose')); pg.wait_for_timeout(150)
+            ok(pg.locator('#zoomv.open').count() == 0, '✕ closes the zoom viewer')
+            # note mode: pinch to zoom, then tap a small part
+            T.tap(*centre(pg, '#dclose')); pg.wait_for_timeout(150)
+            T.tap(*centre(pg, '.card[data-id="TL-003"]')); pg.wait_for_timeout(200)
+            T.tap(*centre(pg, '#addNote')); pg.wait_for_selector('#stwrap'); pg.wait_for_timeout(200)
+            sw = pg.locator('#stwrap').bounding_box()
+            ok(pg.locator('#nform.peek').count() == 1 and 'Pinch to zoom, then tap a part' in pg.inner_text('#nform'), 'note mode: the form waits as a small sheet (“Pinch to zoom, then tap a part”)')
+            ok(sw['width'] >= VW - 20 or sw['height'] >= VH - 200, f'the screen is shown as large as fits ({sw["width"]:.0f} × {sw["height"]:.0f})')
+            k = pg.evaluate('NM.k')
+            e = min((x for x in by(a1)['TL-003']['elements'] if x['w'] * x['h'] > 0), key=lambda x: x['w'] * x['h'])   # the smallest part
+            sc = (sw['x'] + (e['x'] + e['w'] / 2) * k, sw['y'] + (e['y'] + e['h'] / 2) * k)
+            T.pinch(sc, 40, 120, upright=True); pg.wait_for_timeout(400)   # fingers above and below it, so both land on the screen
+            zn = pg.evaluate(SCALE_JS, '#stage')
+            ok(2.5 < zn['z'] <= 5, f'pinch zooms the screen while marking ({zn["z"]:.2f}×)')
+            def place(e): return (sw['x'] + zn['x'] + (e['x'] + e['w'] / 2) * k * zn['z'], sw['y'] + zn['y'] + (e['y'] + e['h'] / 2) * k * zn['z'])
+            T.tap(*place(e)); pg.wait_for_timeout(250)
+            got = pg.evaluate('NM.el && NM.el.path')
+            ok(got == e['path'] and pg.locator('#nform.peek').count() == 0, f'a small part ({e["w"]:.0f} × {e["h"]:.0f} pt) is picked by tapping it zoomed in, and the form opens')
+            ok(abs(pg.evaluate(SCALE_JS, '#stage')['z'] - zn['z']) < 0.02, 'the zoom stays after picking')
+            T.tap(*centre(pg, '#nmCancel')); pg.wait_for_timeout(150)
+            ok(not [x for x in errs if 'ERR_' not in x], 'no errors in the Lightbox, details or zoom viewer' + (': ' + '; '.join(errs[:3]) if errs else ''))
+            pg.context.close()
+
+            # --- the map
+            pg, errs, T = phone_page(b, v1.url, preset=store)
+            T.tap(*centre(pg, '[data-view="map"]')); pg.wait_for_selector('#mapin'); pg.wait_for_timeout(500)
+            k0 = pg.evaluate('MV.k')
+            ok(0.45 <= k0 <= 0.9, f'the map opens at a readable size ({k0 * 100:.0f}%)')
+            ok(not pg.locator('.mbar').is_visible() and not pg.locator('.mlegend').is_visible(), 'the map’s options and key are folded away')
+            T.tap(*centre(pg, '#mopts')); pg.wait_for_timeout(150)
+            ok(pg.locator('.mbar').is_visible() and pg.locator('#mapLabels').is_visible(), 'Map options shows Show, Labels, Note label and Tidy layout')
+            T.tap(*centre(pg, '#mapLabels')); pg.wait_for_timeout(150)
+            ok(pg.locator('#map .elabel').count() >= 4, 'Labels shows what’s tapped on every line')
+            T.tap(*centre(pg, '#mapLabels')); T.tap(*centre(pg, '#mopts')); pg.wait_for_timeout(150)
+            T.tap(*centre(pg, '#mkey')); pg.wait_for_timeout(150)
+            ok(pg.locator('.mlegend').is_visible(), 'Key shows the legend')
+            T.tap(*centre(pg, '#mkey')); pg.wait_for_timeout(150)
+            mb = pg.locator('#map').bounding_box()
+            # pinch around a point on empty map: the point under your fingers stays put
+            pc = (mb['x'] + mb['width'] * 0.5, mb['y'] + mb['height'] * 0.82)
+            w0 = pg.evaluate('([x, y]) => { const r = $("map").getBoundingClientRect(); return [(x - r.left - MV.x) / MV.k, (y - r.top - MV.y) / MV.k]; }', list(pc))
+            T.pinch(pc, 80, 160); pg.wait_for_timeout(400)
+            k1 = pg.evaluate('MV.k')
+            w1 = pg.evaluate('([x, y]) => { const r = $("map").getBoundingClientRect(); return [(x - r.left - MV.x) / MV.k, (y - r.top - MV.y) / MV.k]; }', list(pc))
+            ok(abs(k1 / k0 - 2) < 0.1 and abs(w1[0] - w0[0]) < 3 and abs(w1[1] - w0[1]) < 3, f'pinch zooms the map around your fingers ({k0 * 100:.0f}% → {k1 * 100:.0f}%, the point under them stays)')
+            n = pg.evaluate(BURST_JS, ['#mapin', '#map', pc[0], pc[1]]); pg.wait_for_timeout(450)
+            ok(1 <= n <= 2, f'the map is drawn once per screen refresh: {n} draw(s) for 40 finger moves in one moment')
+            T.pinch(pc, 30, 330, lift=False); pg.wait_for_timeout(60)
+            past = pg.evaluate('MV.k'); T.send('touchEnd', []); pg.wait_for_timeout(500)
+            ok(past > 2.52 and abs(pg.evaluate('(RV||MV).k') - 2.5) < 0.01, f'pinching past 250% gives a little ({past * 100:.0f}%) and eases back to 250%')
+            # fit, then one finger moves the map and a flick glides on
+            pg.evaluate('fitFirst()'); pg.wait_for_timeout(450)
+            x0 = pg.evaluate('MV.x')
+            a = (mb['x'] + mb['width'] * 0.3, mb['y'] + mb['height'] * 0.85)
+            T.drag(a, (a[0] + 120, a[1]), steps=6, ms=60); x1 = pg.evaluate('(RV||MV).x'); pg.wait_for_timeout(650)
+            x2 = pg.evaluate('(RV||MV).x')
+            ok(x1 - x0 > 90 and x2 - x1 > 20, f'one finger moves the map, and a flick keeps it gliding ({x1 - x0:.0f} pt, then {x2 - x1:.0f} more)')
+            pg.evaluate('fitFirst()'); pg.wait_for_timeout(450)
+            sid = pg.evaluate("[...document.querySelectorAll('.mcard')].map(c => [c.dataset.mid, c.getBoundingClientRect()]).find(([i, r]) => r.top > 110 && r.bottom < innerHeight - 120 && r.left > 0 && r.right < innerWidth)[0]")
+            T.tap(*centre(pg, f'.mcard[data-mid="{sid}"]')); pg.wait_for_timeout(450)
+            ok(pg.locator('#det.open').count() == 1 and pg.evaluate('S.open') == sid, f'one tap on a screen opens it ({sid})')
+            T.drag((VW / 2, VH * 0.25), (VW / 2, VH * 0.75), ms=150); pg.wait_for_timeout(250)
+            if pg.locator('#det.open').count(): T.tap(*centre(pg, '#dclose')); pg.wait_for_timeout(200)
+            T.dbl(*centre(pg, f'.mcard[data-mid="{sid}"]')); pg.wait_for_timeout(120)
+            mk = pg.evaluate('(RV||MV).k'); pg.wait_for_timeout(450)
+            cb = pg.locator(f'.mcard[data-mid="{sid}"]').bounding_box()
+            ok(abs(pg.evaluate('(RV||MV).k') - 1.1) < 0.01 and abs(cb['x'] + cb['width'] / 2 - (mb['x'] + mb['width'] / 2)) < 30 and pg.locator('#det.open').count() == 0,
+               f'double-tap a screen zooms to it, animated (half-way {mk * 100:.0f}%)')
+            pg.evaluate('fitFirst()'); pg.wait_for_timeout(450)
+            before = dict(pg.evaluate(f'LAYOUT.pos["{sid}"] || autoLayout().pos["{sid}"]'))
+            cc = centre(pg, f'.mcard[data-mid="{sid}"]')
+            T.drag(cc, (cc[0] + 50, cc[1] + 40), steps=6, ms=60); pg.wait_for_timeout(700)
+            ok(not pg.evaluate(f'!!LAYOUT.pos["{sid}"] && LAYOUT.pos["{sid}"].x !== {before["x"]}'), 'dragging a screen straight away moves the map, not the screen')
+            pg.evaluate('fitFirst()'); pg.wait_for_timeout(450)
+            cc = centre(pg, f'.mcard[data-mid="{sid}"]')
+            T.drag(cc, (cc[0] + 50, cc[1] + 40), steps=6, ms=90, hold=480); pg.wait_for_timeout(300)
+            moved = pg.evaluate(f'LAYOUT.pos["{sid}"]') or {}
+            kk = pg.evaluate('MV.k')
+            ok(moved and abs(moved['x'] - before['x'] - 50 / kk) < 4 and abs(moved['y'] - before['y'] - 40 / kk) < 4, 'hold a screen, then drag, to move it on the map')
+            ok(not [x for x in errs if 'ERR_' not in x], 'no errors on the map' + (': ' + '; '.join(errs[:3]) if errs else ''))
+            pg.context.close()
+
+            # --- flows
+            pg, errs, T = phone_page(b, v1.url, preset=store)
+            T.tap(*centre(pg, '[data-view="flows"]')); pg.wait_for_selector('.fshot'); pg.wait_for_timeout(250)
+            fs, fi = pg.locator('.fshot').bounding_box(), pg.locator('.finfo').bounding_box()
+            ok(fs['x'] + fs['width'] <= fi['x'] + 1 and fi['y'] < fs['y'] + fs['height'], 'the step’s picture and its info sit side by side')
+            nav = [pg.locator('.fnav button').nth(i).bounding_box() for i in range(pg.locator('.fnav button').count())]
+            bar = pg.locator('.seg.views').bounding_box()
+            ok(len(nav) == 3 and all(n['y'] >= 0 and n['y'] + n['height'] <= bar['y'] + 0.5 and n['height'] >= 43.5 for n in nav), 'Back · Next · Lightbox are on screen above the bottom bar, each at least 44 pt')
+            ok(not pg.locator('#mchips').is_visible(), 'the filter row is hidden in Flows')
+            T.drag((VW * 0.8, fs['y'] + fs['height'] / 2), (VW * 0.2, fs['y'] + fs['height'] / 2), ms=120); pg.wait_for_timeout(200)
+            s1n = pg.evaluate('S.step')
+            T.drag((VW * 0.2, fs['y'] + fs['height'] / 2), (VW * 0.8, fs['y'] + fs['height'] / 2), ms=120); pg.wait_for_timeout(200)
+            ok((s1n, pg.evaluate('S.step')) == (1, 0), 'swipe left for the next step, right for the one before')
+            ok(pg.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'nothing scrolls sideways in Flows')
+            ok(not [x for x in errs if 'ERR_' not in x], 'no errors in Flows' + (': ' + '; '.join(errs[:3]) if errs else ''))
+            pg.context.close()
+
+            # --- the computer stays as it was, plus trackpad pinch in the zoom viewer and animated map buttons
+            pg, errs = viewer_page(b, v1.url, preset=store)
+            ok(pg.locator('#searchBtn').is_visible() is False and pg.locator('#q').is_visible() and pg.locator('header .seg.views').bounding_box()['y'] < 60, 'on a computer: the search field and the view switch stay at the top')
+            pg.click('.card[data-id="TL-001"]'); pg.click('#dfull'); pg.wait_for_selector('#zoomv.open'); pg.wait_for_timeout(200)
+            za = pg.locator('#zarea').bounding_box()
+            pg.mouse.move(za['x'] + za['width'] / 2, za['y'] + 200)
+            for _ in range(5): pg.evaluate("""() => document.getElementById('zarea').dispatchEvent(new WheelEvent('wheel', {deltaY:-20, ctrlKey:true, clientX:innerWidth/2, clientY:300, bubbles:true, cancelable:true}))""")
+            pg.wait_for_timeout(100)
+            ok(pg.evaluate(SCALE_JS, '#zin')['z'] > 1.5, 'a trackpad pinch zooms in the zoom viewer')
+            pg.keyboard.press('Escape'); pg.keyboard.press('Escape')
+            pg.click('[data-view="map"]'); pg.wait_for_timeout(400)
+            k0 = pg.evaluate('(RV||MV).k'); pg.click('#zin'); pg.wait_for_timeout(110); km = pg.evaluate('(RV||MV).k'); pg.wait_for_timeout(400)
+            ok(k0 < km < k0 * 1.25 - 0.005 and abs(pg.evaluate('(RV||MV).k') - min(2.5, k0 * 1.25)) < 0.01, 'the map’s + button zooms, animated')
+            ok(not [x for x in errs if 'ERR_' not in x], 'no errors on a computer' + (': ' + '; '.join(errs[:3]) if errs else ''))
+            pg.close()
+            b.close()
+    finally:
+        v1.close(); v2.close()
+
+
 # ---------- check my notes ----------
 def t_notes(tmp, store):
     print('“Check my notes”: the Atlas’s notes and a prototype’s, together')
@@ -364,18 +632,19 @@ def t_notes(tmp, store):
 
 
 def main(argv):
-    parts = argv or ['names', 'shared', 'site', 'state', 'compare', 'viewer', 'notes']
+    parts = argv or ['names', 'shared', 'site', 'state', 'compare', 'viewer', 'phone', 'notes']
     tmp = tempfile.mkdtemp(prefix='atlas-kit-test-')
     try:
         if 'names' in parts: t_names()
         if 'shared' in parts: t_shared()
-        need_scans = {'site', 'state', 'compare', 'viewer', 'notes'} & set(parts)
+        need_scans = {'site', 'state', 'compare', 'viewer', 'phone', 'notes'} & set(parts)
         if need_scans:
             p1 = t_site(tmp)
             s1 = t_state(tmp)
-            s2 = t_compare(tmp, s1, p1) if {'compare', 'viewer', 'notes'} & set(parts) else None
-            if {'viewer', 'notes'} & set(parts):
+            s2 = t_compare(tmp, s1, p1) if {'compare', 'viewer', 'phone', 'notes'} & set(parts) else None
+            if {'viewer', 'phone', 'notes'} & set(parts):
                 store = t_viewer(tmp, s1, s2)
+                if 'phone' in parts: t_phone(tmp, s1, s2, store)
                 if 'notes' in parts: t_notes(tmp, store)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
