@@ -111,3 +111,23 @@ Each kit version gets its own Render and Build here. No Q number: the kit belong
 **Out of scope:** anything in an app; the Prototype kit; compare views.
 **Done when:** the kit's tests gain phone checks (iPhone size with touch: map, zoom viewer and note-mode pinch; swipes; bottom bar; 44 pt controls; give and ease-back at the limits; one draw per frame; no sideways scroll; no errors) and all pass, with the desktop checks unchanged; `CHANGELOG.md` 1.1.0; the demo page republished on 1.1.
 **After the work:** a Debrief here, and up to five checks for Ivan's phone.
+
+## Debrief · kit 1.1 (3 Nov 2026)
+
+**What's in it:** items 1–9 above, as tried in the phone prototype. See `CHANGELOG.md` › 1.1.0 and README › On a phone.
+
+- **Viewer:** the phone prototype's `index.html` (round 2, the one Ivan was happy with) is now `viewer.html`, unchanged apart from three things the new checks found or needed: the ↻ rescan button is 44 pt wide on a phone (it was 37); the map catches a finger that's already gone when it starts a move, as the zoom viewer already did (a page error otherwise); and the kit's version reads 1.1.0.
+- **Desktop:** unchanged; its 82 checks are the same and pass.
+
+**Checked:** `python3 tests/test_kit.py`: 134 checks pass (82 computer checks, as in 1.0, and 52 new phone checks), with the Prototype kit 1.1.0 beside it. The phone checks run at iPhone 15 Pro size with real touch events (pinch, double-tap, swipes, hold-to-move): one-row top (61 pt), bottom bar, every control at least 44 pt, banners folded, search, grid pinch 2 / 4 columns kept after a reload, details swipes, the zoom viewer (pinch, 6× limit with give and ease-back, animated double-tap), note mode (pinch, then tap a 6 × 20 pt part; the zoom stays), the map (readable start at 69%, pinch around the fingers with give past 250%, a flick that glides, double-tap to a screen, hold-to-move, Map options, Labels, Key), Flows (side by side, Back · Next · Lightbox above the bar, swipes), one draw per screen refresh (40 finger moves in one moment draw once, on pictures and the map), no sideways scroll, no errors; on a computer, trackpad pinch in the zoom viewer and an animated + button. The phone checks ran three times in a row without a miss.
+
+**Demo:** [Atlas kit demo](https://claude.ai/artifact/G6mPQt1qo3iUDaoDMkqFEu) republished on 1.1 (the made-up app at version 2 compared with version 1, its store and downloads as before).
+
+**Used by:** Vocal Sessions Q31 (pinned copy in `tools/atlas/kit/`).
+
+**For Ivan's phone:**
+1. Open the demo. Pinch the Lightbox grid: 2, 3 or 4 columns.
+2. Tap a screen, then swipe left and right through the details; swipe down to close.
+3. Tap **Full length**, pinch in past the limit and let go: it eases back. Double-tap to go back out.
+4. **Map:** pinch around a screen, flick the map, double-tap a screen. Hold one, then drag it.
+5. **Add note:** pinch in, tap a small part, write a word, Save. The zoom stays.
