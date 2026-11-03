@@ -1,0 +1,5 @@
+body{margin:0;font:17px/1.4 system-ui,sans-serif;color:#2a2018;background:#fffaf2}
+header{display:flex;flex-direction:column;gap:6px;padding:16px;background:#f3e3cc}
+.brand{font-weight:700;font-size:20px;color:#2a2018;text-decoration:none}nav a{margin-right:12px;color:#8a4b12}
+main{padding:16px}h1{font-size:28px}footer{padding:16px;font-size:13px;color:#6b5a48}
+button{font:inherit;padding:10px 14px;border-radius:10px;border:1px solid #c9a77c;background:#fff}

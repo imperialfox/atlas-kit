@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tidy list</title>
+<!-- A made-up app for the Atlas kit's tests: screens without addresses, with screen IDs (screens.js). -->
+<style>
+  :root{--bg:#f2f2f7;--card:#fff;--ink:#111;--mute:#6e6e73;--accent:#0a7cff;--sep:#d8d8dc;--hero:#e7f0ff}
+  @media (prefers-color-scheme: dark){:root{--bg:#000;--card:#1c1c1e;--ink:#f2f2f7;--mute:#98989f;--sep:#38383a;--hero:#16243a}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.35 -apple-system,system-ui,sans-serif}
+  #app{min-height:100vh;padding:56px 16px 96px}
+  h1{font-size:34px;margin:8px 0 16px}
+  .hero{background:var(--hero);border-radius:16px;padding:16px;margin-bottom:16px}
+  .hero.v2{background:#ffe9c7;color:#4a2b00}
+  .card{background:var(--card);border-radius:12px;overflow:hidden;margin-bottom:16px}
+  .row{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:48px;padding:12px 16px;border:0;border-bottom:1px solid var(--sep);background:none;color:inherit;font:inherit;text-align:left}
+  .row:last-child{border-bottom:0}
+  .pri{display:block;width:100%;height:50px;border:0;border-radius:12px;background:var(--accent);color:#fff;font:600 17px system-ui}
+  .back{border:0;background:none;color:var(--accent);font:inherit;padding:0;position:absolute;top:16px;left:16px}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--sep);padding:8px 0 24px}
+  .tabbar button{flex:1;border:0;background:none;color:var(--mute);font:12px system-ui;padding:6px}
+  .tabbar button[aria-current=true]{color:var(--accent);font-weight:600}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end}
+  .sheet{background:var(--card);width:100%;border-radius:16px 16px 0 0;padding:20px 16px 32px}
+  .sheet h2{margin:0 0 12px;font-size:20px}
+  input{width:100%;height:44px;border-radius:10px;border:1px solid var(--sep);padding:0 12px;font:inherit;background:var(--bg);color:inherit;margin-bottom:12px}
+  .muted{color:var(--mute);font-size:15px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="layer"></div>
+<script src="version.js"></script>
+<script src="screens.js"></script>
+<script>
+'use strict';
+const V2 = window.APP_VERSION === 2;
+const SETTINGS_TAB = V2 ? 'prefs' : 'settings';        // v2 renames the Settings tab's code key
+const freshU = () => ({tab: 'home', view: null, sheet: null});
+let U = freshU();
+let items = JSON.parse(localStorage.getItem('tidyItems') || '[]');
+const save = () => localStorage.setItem('tidyItems', JSON.stringify(items));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// the register (screens.js) gives each screen's ID, by its code key or an older one
+const idFor = key => { const s = SCREENS.find(x => x.key === key || (x.aliases || []).includes(key)); return s ? s.id : 'TL-???'; };
+
+function home(){
+  return '<h1>Home</h1><div class="hero'+(V2?' v2':'')+'" data-name="summary">'+items.length+' things on your list'+(V2?' · nice going':'')+'</div>'+
+    '<button class="pri" data-name="add-button">Add an item</button>'+
+    (V2 ? '<div class="card" style="margin-top:16px"><button class="row" data-name="stats-row">Stats <span class="muted">›</span></button></div>' : '');
+}
+function list(){
+  if (!items.length) return '<h1>List</h1><p class="muted" data-name="empty-note">Nothing here yet.</p>';
+  return '<h1>List</h1><div class="card">'+items.map((t,i)=>'<div class="row" data-name="item-row" data-i="'+i+'">'+esc(t)+'</div>').join('')+'</div>'+
+    '<p class="muted">Hold an item for more.</p>';
+}
+function settings(){
+  return '<h1>Settings</h1><div class="card"><button class="row" data-name="about-row">About <span class="muted">›</span></button>'+
+    '<a class="row" href="https://example.com/help" data-name="help-link">Help (opens the web)</a>'+
+    '<button class="row" data-name="clear-button">Clear the list</button></div>';
+}
+function about(){ return '<button class="back" data-name="back-button" aria-label="Back">‹ Settings</button><h1>About</h1><p class="muted">Tidy list, a made-up app.</p>'; }
+function stats(){ return '<button class="back" data-name="back-button" aria-label="Back">‹ Home</button><h1>Stats</h1><p>'+items.length+' items</p>'; }
+
+function render(){
+  const key = U.view || U.tab;
+  const body = U.view==='about' ? about() : U.view==='stats' ? stats() : U.tab==='list' ? list() : U.tab===SETTINGS_TAB ? settings() : home();
+  const app = document.getElementById('app');
+  app.dataset.screen = idFor(key);
+  app.innerHTML = body + (U.view ? '' :
+    '<nav class="tabbar">'+[['home','Home'],['list','List'],[SETTINGS_TAB,'Settings']].map(([k,l])=>'<button data-name="tab-'+(k===SETTINGS_TAB?'settings':k)+'" data-tab="'+k+'" aria-current="'+(U.tab===k)+'">'+l+'</button>').join('')+'</nav>');
+  const layer = document.getElementById('layer');
+  if (!U.sheet) { layer.innerHTML = ''; return; }
+  const sh = U.sheet==='add'
+    ? '<h2>Add an item</h2><input data-name="title-field" placeholder="What is it?"><button class="pri" data-name="save-button">Save</button><p style="text-align:center"><button class="back" style="position:static" data-name="cancel-button">Cancel</button></p>'
+    : '<h2>'+esc(items[U.item] || 'Item')+'</h2><div class="card"><button class="row" data-name="done-button">Mark done</button><button class="row" data-name="close-button">Close</button></div>';
+  layer.innerHTML = '<div class="scrim"><div class="sheet" role="dialog" aria-modal="true" data-screen="'+idFor(U.sheet)+'" aria-label="'+(U.sheet==='add'?'Add an item':'Item')+'">'+sh+'</div></div>';
+}
+const go = f => { f(); render(); };
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-name],[data-tab]'); if (!t) return;
+  const n = t.dataset.name;
+  if (t.dataset.tab) return go(() => { U = freshU(); U.tab = t.dataset.tab; });
+  if (n==='add-button') return go(() => U.sheet = 'add');
+  if (n==='save-button') { const v = document.querySelector('[data-name=title-field]').value.trim(); if (!v) return; return go(() => { items.push(v); save(); U = freshU(); U.tab = 'list'; }); }
+  if (n==='cancel-button' || n==='close-button') return go(() => U.sheet = null);
+  if (n==='done-button') return go(() => { items.splice(U.item, 1); save(); U.sheet = null; });
+  if (n==='about-row') return go(() => U.view = 'about');
+  if (n==='stats-row') return go(() => U.view = 'stats');
+  if (n==='back-button') return go(() => U.view = null);
+  if (n==='clear-button') return go(() => { items = []; save(); });
+});
+// hold an item for its menu (the scan can't hold, so this door is written by hand in the settings)
+let holdT = 0;
+document.addEventListener('pointerdown', e => { const r = e.target.closest('[data-name=item-row]'); if (r) holdT = setTimeout(() => openMenu(+r.dataset.i), 600); });
+document.addEventListener('pointerup', () => clearTimeout(holdT));
+function openMenu(i){ go(() => { U.item = i; U.sheet = 'menu'; }); }
+// for the Atlas: keep a copy of the data, and go back to it
+window.__snap = () => { window.__items = JSON.stringify(items); };
+window.__reset = () => { items = JSON.parse(window.__items || '[]'); save(); U = freshU(); window.scrollTo(0, 0); render(); };
+render();
+</script>
+</body>
+</html>

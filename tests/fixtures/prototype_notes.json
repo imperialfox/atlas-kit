@@ -1,0 +1,57 @@
+[
+ {
+  "v": 1,
+  "source": "prototype",
+  "app": "Tidy list",
+  "screen": "TL-005",
+  "screenTitle": "Add an item, Save first",
+  "part": "save-button",
+  "name": "save-button",
+  "key": "n:save-button",
+  "text": "Save sits above the field, so it is in reach of a thumb",
+  "kind": "",
+  "status": "open",
+  "box": {
+   "x": 0.0398,
+   "y": 0.8192,
+   "w": 0.9204,
+   "h": 0.0572
+  },
+  "px": {
+   "x": 16,
+   "y": 716,
+   "w": 370,
+   "h": 50
+  },
+  "device": "iphone",
+  "element": {
+   "tag": "div",
+   "cls": "save",
+   "text": "Save",
+   "path": "section.page > div.scrim > div.sheet > div.save",
+   "style": {
+    "font": "13px 600",
+    "lh": "17.55px",
+    "color": "rgb(255, 255, 255)",
+    "bg": "rgb(0, 122, 255)",
+    "pad": "0px",
+    "radius": "12px"
+   }
+  },
+  "edits": {
+   "move": {
+    "dx": 0,
+    "dy": -6
+   }
+  },
+  "from": {
+   "prototype": "tidy-add-item-v1",
+   "version": "1",
+   "kit": "1.1.0"
+  },
+  "n": 1,
+  "created": "2026-11-03T08:44:50.264Z",
+  "updated": "2026-11-03T08:44:50.264Z",
+  "id": "p-n_save-button-1e7q9nv"
+ }
+]

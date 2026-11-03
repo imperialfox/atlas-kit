@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atlas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Atlas kit · viewer. One file for any app: reads atlas.json and shots/ next to it (the app's name, areas and docs come
+   from the scan, never from this page). Notes, the map layout and listed prototypes live in the page's own store
+   (the db capability on claude.ai), in note format v1 (SHARED.md), so Claude can read them. */
+:root{
+  --bg:#151517;--bg2:#18181b;--bar:#1b1b1e;--card:#1e1e21;--raise:#232327;--field:#26262a;
+  --line:#2c2c30;--line2:#3a3a3e;--ink:#f2f2f7;--ink2:#c7c7cc;--mute:#a1a1a6;--mute2:#8e8e93;
+  --accent:#2f6feb;--sel:#4c8dff;--link:#7fb0ff;
+  --amber:#f5b13d;--amberB:#5a4520;--red:#ff8a80;--redB:#5c2c2a;--green:#7ed9a0;--greenB:#285a3b;--teal:#5ac8c8;
+  --thumb:150px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px/1.4 Inter,system-ui,-apple-system,sans-serif}
+button,input,textarea,select{font:inherit;color:inherit}
+a{color:var(--link)}a:hover{color:#a9c9ff}
+:focus-visible{outline:2px solid var(--sel);outline-offset:2px}
+.app{display:flex;flex-direction:column;height:100%}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--bar)}
+.brand{display:flex;align-items:center;gap:10px;min-width:190px}
+.logo{width:26px;height:26px;border-radius:7px;background:var(--accent);display:grid;place-items:center}
+.brand strong{font-size:14px;display:block}.brand span{font-size:11px;color:var(--mute)}
+.seg{display:flex;padding:3px;border-radius:9px;background:var(--field)}
+.seg button{height:28px;padding:0 12px;border:0;border-radius:7px;background:transparent;color:var(--ink2);font-weight:500;font-size:12px;cursor:pointer}
+.seg button[aria-pressed=true]{background:#3a3a40;color:#fff;font-weight:600}
+.seg button:disabled{color:#6a6a70;cursor:not-allowed}
+.search{flex:1 1 220px;display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border-radius:8px;background:var(--field);color:var(--mute)}
+.search input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:13px Inter,system-ui;outline:none}
+.kbd{font-size:11px;border:1px solid var(--line2);border-radius:4px;padding:0 5px;color:var(--mute)}
+.size{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--mute)}
+.size input{width:90px;accent-color:#e5e5ea}
+.stamp{font-size:12px;color:var(--mute);margin-left:auto}
+.btn{height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line2);background:var(--field);color:var(--ink);font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{height:28px;padding:0 10px;font-size:11px}
+.body{flex:1;display:flex;min-height:0;position:relative}
+nav.side{flex:0 0 236px;padding:14px 10px;border-right:1px solid var(--line);background:var(--bg2);overflow:auto;display:flex;flex-direction:column;gap:18px}
+.h{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--mute2);padding:0 10px 6px;text-transform:uppercase}
+.navrow{display:flex;justify-content:space-between;align-items:center;width:100%;height:30px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:#d1d1d6;font-size:13px;cursor:pointer;text-align:left}
+.navrow:hover{background:#222226}.navrow[aria-pressed=true]{background:#2a2a30;color:#fff}
+.navrow .n{color:var(--mute2);font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 10px}
+.chip{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 10px;border-radius:13px;font-size:11px;font-weight:600;border:1px solid var(--line2);color:var(--ink2);background:#1f1f22;cursor:pointer;white-space:nowrap}
+.chip[aria-pressed=true]{background:var(--ink)!important;color:#151517!important;border-color:var(--ink)!important}
+.chip.ch{color:var(--amber);border-color:var(--amberB)}.chip.fail{color:var(--red);border-color:var(--redB)}.chip.unc{border-style:dashed}.chip.new{color:var(--link);border-color:#24406e}
+.toggle{display:flex;align-items:center;gap:8px;padding:0 10px;font-size:12px;color:var(--ink2);cursor:pointer}
+.toggle input{accent-color:var(--accent)}
+main{flex:999 1 560px;min-width:0;overflow:auto;padding:18px 22px 40px}
+.banner{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:12px 14px;margin-bottom:18px;border-radius:12px;background:#1d2230;border:1px solid #2c3854}
+.banner strong{font-size:14px}.banner .note{color:#b9c6e0}
+.sum{display:flex;flex-wrap:wrap;gap:8px}
+.group{margin-bottom:26px}
+.ghead{display:flex;align-items:baseline;gap:10px;margin:0 0 12px}
+.ghead h2{margin:0;font-size:15px}.ghead span{font-size:12px;color:var(--mute2)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--thumb),1fr));gap:16px}
+.card{display:flex;flex-direction:column;gap:8px;padding:8px;border-radius:12px;background:var(--card);border:1px solid var(--line);cursor:pointer;text-align:left;min-width:0;position:relative}
+.card:hover{border-color:#45454b}
+.card[aria-current=true]{border:2px solid var(--sel);padding:7px}
+.th{aspect-ratio:402/874;border-radius:10px;overflow:hidden;background:#e6e6ea;position:relative}
+.th img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.th.unc{background:transparent;border:1.5px dashed #48484e;display:grid;place-items:center;color:var(--mute);font-size:11px;text-align:center;padding:8px}
+.th.fail{background:repeating-linear-gradient(45deg,#2a1e1e,#2a1e1e 8px,#241a1a 8px,#241a1a 16px);border:1px dashed #6b3430;display:grid;place-items:center;color:var(--red);font-size:11px;font-weight:600;text-align:center;padding:8px}
+.th.gone img{opacity:.35;filter:grayscale(1)}
+.chbox{position:absolute;border:2px solid var(--amber);background:rgba(245,177,61,.14);border-radius:4px;pointer-events:none}
+.npin{position:absolute;top:6px;right:6px;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--sel);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center}
+.meta{display:flex;flex-direction:column;gap:2px;padding:0 2px;min-width:0}
+.meta b{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta span{font-size:11px;color:var(--mute2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:9px;border:1px solid var(--line2);color:var(--mute);white-space:nowrap}
+.badge.fail{color:var(--red);border-color:var(--redB)}.badge.unc{border-style:dashed}.badge.warn,.badge.ch{color:var(--amber);border-color:var(--amberB)}.badge.new{color:var(--link);border-color:#24406e}
+.empty{padding:40px;text-align:center;color:var(--mute)}
+aside.det{flex:0 0 440px;max-width:46vw;border-left:1px solid var(--line);background:#1a1a1d;overflow:auto;display:none;flex-direction:column}
+aside.det.open{display:flex}
+.dtop{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);background:#1a1a1d}
+.ib{width:32px;height:32px;border-radius:8px;border:1px solid var(--line2);background:var(--field);color:var(--ink);cursor:pointer;display:grid;place-items:center;flex:0 0 auto}
+.ib:disabled{opacity:.4;cursor:default}
+.dtitle{display:flex;flex-direction:column;min-width:0;margin-left:4px}
+.dtitle strong{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dtitle span{font-size:11px;color:var(--mute2)}
+.dbody{padding:14px;display:flex;flex-direction:column;gap:16px}
+.dhero{display:flex;gap:14px;align-items:flex-start}
+.dshot{flex:0 0 168px;border-radius:14px;overflow:hidden;background:#e6e6ea;cursor:zoom-in;border:0;padding:0;position:relative}
+.dshot img{width:100%;display:block}
+.kv{display:flex;flex-direction:column;gap:9px;font-size:12px;min-width:0;margin:0}
+.kv div{display:flex;flex-direction:column;gap:1px}.kv dt{font-size:11px;color:var(--mute2)}.kv dd{margin:0;word-break:break-word}
+.code{font:11px/1.45 ui-monospace,Menlo,monospace;color:var(--ink2)}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+.sect .h{padding:0 0 6px}
+.lrow{display:flex;align-items:center;gap:10px;width:100%;min-height:36px;padding:7px 10px;border-radius:8px;background:var(--raise);border:0;color:var(--ink);font-size:12px;text-align:left;margin-bottom:5px}
+button.lrow{cursor:pointer}button.lrow:hover{background:#2a2a2f}
+.lrow .lt{flex:1;min-width:0}.lrow .lt small{display:block;color:var(--mute2);font-size:11px}
+.tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:9px;border:1px solid var(--line2);color:var(--mute);white-space:nowrap}
+.tag.nt{border-style:dotted}.tag.bad{color:var(--red);border-color:var(--redB)}.tag.open{color:var(--link);border-color:#24406e}.tag.looking{color:var(--amber);border-color:var(--amberB)}.tag.fixed{color:var(--green);border-color:var(--greenB)}.tag.dismissed{border-style:dashed}
+.more{border:0;background:none;color:var(--link);font-size:12px;cursor:pointer;padding:2px 0}
+.note{font-size:11px;color:var(--mute2);line-height:1.5}
+.err{font:11px/1.45 ui-monospace,Menlo,monospace;color:var(--red);background:#241a1a;border-radius:8px;padding:8px}
+.cmp{display:flex;gap:10px}.cmp figure{margin:0;flex:1;display:flex;flex-direction:column;gap:4px}.cmp figcaption{font-size:11px;color:var(--mute2)}
+.cmp .pic{position:relative;border-radius:10px;overflow:hidden;background:#e6e6ea}.cmp img{width:100%;display:block}
+.wipe{position:relative;border-radius:10px;overflow:hidden;background:#e6e6ea;width:100%;max-width:300px;margin:0 auto}
+.wipe img{width:100%;display:block}.wipe .top{position:absolute;inset:0;overflow:hidden}.wipe .top img{position:absolute;left:0;top:0}
+.wipe .bar{position:absolute;top:0;bottom:0;width:2px;background:var(--amber)}
+footer{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;padding:7px 16px;border-top:1px solid var(--line);background:var(--bar);font-size:11px;color:var(--mute)}
+footer .r{margin-left:auto}
+#foot2{display:none}
+.overlay{position:fixed;inset:0;z-index:20;background:rgba(8,8,10,.92);display:none;flex-direction:column}
+.overlay.open{display:flex}
+.otop{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 16px;color:var(--ink)}
+.full .fsc{flex:1;overflow:auto;display:flex;justify-content:center;padding:0 16px 30px}
+.full .fsc img{width:min(402px,92vw);height:auto;border-radius:18px;align-self:flex-start}
+.pop{position:fixed;z-index:30;right:16px;top:56px;width:310px;padding:14px;border-radius:12px;background:var(--raise);border:1px solid var(--line2);box-shadow:0 18px 40px rgba(0,0,0,.45);display:none;font-size:12px;line-height:1.5}
+.pop.open{display:block}
+.pop code,.inline code{font:12px ui-monospace,Menlo,monospace;background:#151517;padding:2px 6px;border-radius:5px}
+/* note mode */
+.nm{flex:1;display:flex;gap:18px;justify-content:center;align-items:flex-start;overflow:auto;padding:0 16px 24px}
+.stage{position:relative;flex:0 0 auto;user-select:none;touch-action:none;border-radius:18px;overflow:hidden;background:#e6e6ea;cursor:crosshair}
+.stage img{display:block;height:100%;width:100%;pointer-events:none}
+.hov{position:absolute;border:2px solid var(--sel);background:rgba(76,141,255,.10);border-radius:6px;pointer-events:none}
+.mark{position:absolute;border:2px solid var(--sel);background:rgba(76,141,255,.14);border-radius:8px;pointer-events:none}
+.mark.old{border-style:dashed;background:transparent;border-color:#7fb0ff}
+.mark b{position:absolute;left:-10px;top:-10px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--sel);color:#fff;font-size:10px;display:grid;place-items:center}
+.nform{flex:0 1 340px;display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:14px;background:var(--raise);border:1px solid var(--line2)}
+.nform textarea{min-height:92px;resize:vertical;border-radius:9px;border:1px solid var(--line2);background:#1a1a1d;padding:8px;font-size:13px;line-height:1.4}
+.nform textarea:focus{border-color:var(--sel);outline:none}
+.kinds{display:flex;flex-wrap:wrap;gap:6px}
+/* notes drawer + export */
+.drawer{position:absolute;right:0;top:0;bottom:0;width:420px;max-width:100%;background:#1a1a1d;border-left:1px solid var(--line);z-index:12;display:none;flex-direction:column;box-shadow:-20px 0 40px rgba(0,0,0,.35)}
+.drawer.open{display:flex}
+.nlist{flex:1;overflow:auto;padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+.nrow{display:flex;gap:10px;padding:10px;border-radius:10px;background:var(--raise);align-items:flex-start}
+.crop{flex:0 0 64px;height:64px;border-radius:8px;background-color:#e6e6ea;background-repeat:no-repeat;border:0;padding:0;cursor:pointer}
+.nrow .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.nrow select{height:26px;border-radius:7px;border:1px solid var(--line2);background:var(--field);font-size:11px;padding:0 6px}
+.sheetbg{position:fixed;inset:0;z-index:25;background:rgba(8,8,10,.7);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+.sheetbg.open{display:flex}
+.xsheet{width:100%;max-width:980px;border-radius:16px;background:#1c1c1f;border:1px solid #2f2f34;box-shadow:0 30px 80px rgba(0,0,0,.5);display:flex;flex-direction:column;overflow:hidden}
+.xsheet pre{margin:0;padding:12px;border-radius:10px;background:#111113;border:1px solid var(--line);font:11.5px/1.55 ui-monospace,Menlo,monospace;color:#d1d1d6;white-space:pre-wrap;max-height:46vh;overflow:auto}
+.hint{padding:10px 12px;border-radius:10px;background:#1e2c47;color:#bfd5ff;font-size:12px;line-height:1.5}
+.toast{position:fixed;left:50%;bottom:44px;transform:translateX(-50%);z-index:40;padding:9px 14px;border-radius:10px;background:#2a2a30;border:1px solid var(--line2);font-size:12px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+/* map */
+.mapwrap{flex:999 1 560px;min-width:0;position:relative;overflow:hidden;background:#121214;background-image:radial-gradient(#26262a 1px,transparent 1px);background-size:22px 22px;touch-action:none;cursor:grab}
+.mapwrap.panning{cursor:grabbing}
+.mapin{position:absolute;left:0;top:0;transform-origin:0 0}
+.region{position:absolute;border:1px dashed #3a3a42;border-radius:16px;background:rgba(255,255,255,.02)}
+.region span{position:absolute;left:14px;top:10px;font-size:14px;font-weight:700;color:var(--ink2)}
+.mcard{position:absolute;width:96px;display:flex;flex-direction:column;gap:5px;cursor:pointer;border:0;background:none;padding:0;text-align:left}
+.mcard .th{border-radius:9px;width:96px;height:209px;outline:1px solid #2c2c30}
+.mcard[aria-current=true] .th{outline:3px solid var(--sel);outline-offset:2px}
+.mcard b{font-size:11px;font-weight:600;line-height:1.2;color:#d1d1d6}
+.mcard.dim{opacity:.25}
+.lines path.edge{fill:none;stroke:#8e8e96;stroke-width:1.6}
+.lines path.edge.sheet{stroke:var(--teal)}.lines path.edge.back{stroke-dasharray:6 5}.lines path.edge.tab{stroke:#4a4a52;stroke-width:1}
+.lines path.edge.on{stroke:var(--sel);stroke-width:3.2}.lines path.edge.dim{opacity:.12}
+.lines path.hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer;pointer-events:stroke}
+.mlabel{position:absolute;min-width:120px;max-width:260px;padding:8px 10px 8px 22px;border-radius:10px;background:#f5d76e;color:#2a2410;font-size:13px;font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.mlabel .grip{position:absolute;left:4px;top:6px;bottom:6px;width:10px;border-radius:4px;background:repeating-linear-gradient(#c9ad4a 0 2px,transparent 2px 5px);cursor:move}
+.mlabel [contenteditable]{outline:none;min-height:18px}
+.mtools{position:absolute;display:flex;align-items:center;gap:6px;padding:6px;border-radius:12px;background:#1e1e21;border:1px solid var(--line);font-size:11px;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:6px;margin-right:10px}
+.legend i{display:inline-block;width:22px;border-top:2px solid #8e8e96}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.mchips{display:none}
+@media (max-width:760px){
+  header{padding:10px 12px;gap:8px}.brand{min-width:0}.size,.stamp,.kbd{display:none}
+  nav.side{display:none}
+  .mchips{display:flex;gap:6px;overflow-x:auto;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--bg2)}
+  .mchips .chip{height:32px;padding:0 12px;font-size:12px}
+  main{padding:12px}
+  .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .meta span{display:none}
+  aside.det{position:fixed;inset:0;z-index:15;max-width:none;border:0}
+  .dshot{flex-basis:150px}
+  footer .r,#foot1{display:none}
+  #foot2{display:inline}
+  .drawer{position:fixed;inset:0;width:auto;z-index:16}
+  .nm{flex-direction:column;align-items:center;justify-content:flex-start}
+  #nmode .otop .note,#nmode .otop .hint{display:none}
+  #nmode .otop{padding:10px 12px}
+  .nform{flex-basis:auto;width:100%}
+}
+/* ---------- Atlas kit 1.0 additions ---------- */
+[hidden]{display:none!important}
+.sid{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;font:600 10px/1.6 ui-monospace,Menlo,monospace;padding:0 6px;border-radius:6px;background:#22324f;color:#bcd3ff;letter-spacing:.02em;white-space:nowrap;align-self:flex-start}
+.sid.none{background:transparent;border:1px dashed #5a4520;color:var(--amber)}
+.sid.warn{background:transparent;border:1px dashed #5c2c2a;color:var(--red)}
+.cap{font-size:11px;line-height:1.35;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal!important}
+.dcap{font-size:13px;line-height:1.45;color:var(--ink);margin:0}
+.badge.tnew{color:#0b1b33;background:#7fb0ff;border-color:#7fb0ff}.badge.tch{color:#2e1d00;background:var(--amber);border-color:var(--amber)}
+.badge.prop{color:#d9c2ff;border-color:#4b3a6e}
+.chip.tnew{color:var(--link);border-color:#24406e}.chip.tch{color:var(--amber);border-color:var(--amberB)}
+.th.nf{background:transparent;border:1.5px dashed #6b3430;display:grid;place-items:center;color:var(--red);font-size:11px;text-align:center;padding:8px}
+.side select,.sel{height:30px;margin:0 10px;border-radius:8px;border:1px solid var(--line2);background:var(--field);font-size:12px;padding:0 8px;max-width:calc(100% - 20px)}
+.parts{display:flex;flex-wrap:wrap;gap:4px}
+.parts span{font:10px/1.6 ui-monospace,Menlo,monospace;padding:0 6px;border-radius:6px;background:var(--raise);color:var(--ink2)}
+.tag.door{border-style:dashed;color:#d9c2ff;border-color:#4b3a6e}
+.lines path.edge.door{stroke:#b49cff;stroke-dasharray:3 6;stroke-width:1.8}
+.elabel{position:absolute;transform:translate(-50%,-50%);max-width:130px;padding:2px 7px;border-radius:9px;background:#26262b;border:1px solid #3a3a42;color:#e5e5ea;font:600 10px/1.35 Inter,system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;z-index:3}
+.elabel.door{color:#d9c2ff;border-color:#4b3a6e;border-style:dashed}
+.elabel.sheet{color:#9ee6e6;border-color:#2c5a5a}
+.legend i.door{border-top:2px dotted #b49cff}
+/* flows */
+.flows{flex:999 1 560px;min-width:0;overflow:auto;padding:18px 22px 40px;display:flex;flex-direction:column;gap:16px}
+.flist{display:flex;flex-wrap:wrap;gap:8px}
+.fbtn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:9px 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);cursor:pointer;text-align:left;min-width:150px}
+.fbtn[aria-pressed=true]{border:2px solid var(--sel);padding:8px 11px}
+.fbtn b{font-size:13px}.fbtn span{font-size:11px;color:var(--mute2)}
+.fstage{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+.fshot{position:relative;flex:0 0 auto;width:min(320px,80vw);border-radius:18px;overflow:hidden;background:#e6e6ea}
+.fshot img{width:100%;display:block}
+.ring{position:absolute;border:3px solid var(--amber);border-radius:10px;box-shadow:0 0 0 4px rgba(245,177,61,.25);pointer-events:none}
+.finfo{flex:1 1 260px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.finfo h2{margin:0;font-size:18px}
+.step{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--mute2);text-transform:uppercase}
+.tap{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;padding:8px 12px;border-radius:20px;background:#3a2c10;color:#ffd896;font-size:13px;font-weight:600;border:1px solid #5a4520}
+.fnav{display:flex;gap:8px;align-items:center}
+.strip{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:4px 2px 10px}
+.sth{flex:0 0 auto;display:flex;flex-direction:column;gap:4px;width:84px;border:0;background:none;padding:0;cursor:pointer;text-align:left}
+.sth .th{width:84px;height:183px;border-radius:8px;outline:1px solid #2c2c30}
+.sth[aria-current=true] .th{outline:3px solid var(--sel);outline-offset:2px}
+.sth small{font-size:10px;color:var(--mute2);line-height:1.25}
+.arrow{flex:0 0 auto;max-width:92px;font-size:10px;color:#ffd896;text-align:center;line-height:1.25}
+.arrow::before{content:'→';display:block;font-size:16px;color:var(--amber)}
+.ferr{padding:10px 12px;border-radius:10px;background:#241a1a;color:var(--red);font-size:12px}
+.pform{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:10px;background:var(--raise)}
+.pform input{height:32px;border-radius:8px;border:1px solid var(--line2);background:#1a1a1d;padding:0 8px;font-size:12px}
+.flowlink{display:inline-flex;gap:6px;align-items:center}
+@media (max-width:760px){
+  .flows{padding:12px}
+  .fstage{flex-direction:column;align-items:center}
+  .fshot{width:min(230px,60vw)}
+  .finfo{width:100%}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+      <div><strong id="appname">Atlas</strong><span id="appv"></span></div>
+    </div>
+    <div class="seg" role="group" aria-label="View">
+      <button data-view="lightbox" aria-pressed="true">Lightbox</button>
+      <button data-view="map" aria-pressed="false">Map</button>
+      <button data-view="flows" aria-pressed="false" id="flowsTab">Flows</button>
+    </div>
+    <label class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input id="q" type="search" placeholder="Search screens, IDs, buttons, notes" aria-label="Search screens, IDs, buttons and notes"><span class="kbd">/</span></label>
+    <label class="size">S<input id="size" type="range" min="100" max="280" step="10" aria-label="Card size">L</label>
+    <span class="stamp" id="stamp"></span>
+    <button class="btn" id="rescan" aria-haspopup="dialog">Rescan</button>
+    <button class="btn pri" id="notesBtn" aria-haspopup="dialog">Notes · 0</button>
+  </header>
+  <div class="mchips" id="mchips" role="group" aria-label="Filters"></div>
+  <div class="body">
+    <nav class="side" id="side" aria-label="Filters"></nav>
+    <main id="main" aria-live="polite"></main>
+    <div class="mapwrap" id="map" hidden></div>
+    <section class="flows" id="flows" hidden aria-label="Flows"></section>
+    <aside class="det" id="det" aria-label="Details"></aside>
+    <section class="drawer" id="drawer" aria-label="Notes"></section>
+  </div>
+  <footer><span id="foot1"></span><span id="foot2"></span><span class="r" id="keys">/ search · arrows move · Enter open · Esc close · F full length · N note</span></footer>
+</div>
+
+<div class="overlay full" id="full" role="dialog" aria-modal="true" aria-label="Full-length screenshot">
+  <div class="otop"><strong id="ftitle"></strong><span class="note" id="fsub"></span><button class="ib" style="margin-left:auto" id="fclose" aria-label="Close full length">✕</button></div>
+  <div class="fsc"><img id="fimg" alt=""></div>
+</div>
+<div class="overlay" id="nmode" role="dialog" aria-modal="true" aria-label="Add a note"></div>
+<div class="sheetbg" id="xbg"><section class="xsheet" id="xsheet" role="dialog" aria-modal="true" aria-label="Export for Claude"></section></div>
+<div class="pop" id="pop" role="dialog" aria-label="How to rescan">
+  <strong>Rescanning</strong><br>This page shows saved screenshots; it can’t run the app itself. To refresh it:
+  <ul style="margin:6px 0;padding-left:18px"><li>in a Claude chat, say <code>rescan the Atlas</code></li><li>on a computer: <code>python3 atlas.py --settings …</code> (README › Use)</li></ul>
+  <span class="note">Your notes, map layout, filters and card size are kept.</span>
+</div>
+<script>
+'use strict';
+const KIT_VERSION = '1.0.0';
+const KINDS = ['Tab','Screen','Sub-page','Sheet','State','Page'];
+const EXTRA_AREAS = ['Other','Not captured yet','Not found this scan','Gone since the last scan','No longer in the code'];
+const STATUS = {captured:'✓ Captured', failed:'▲ Failed', uncaptured:'Not captured yet', notfound:'Not found this scan', gone:'– Gone'};
+const HOW = {seen:['✓ Seen working',''], stays:['Changes this screen',''], 'not-tested':['Not tested','nt'], broken:['✕ Broken','bad']};
+const NOTE_KINDS = ['Looks different','Layout or spacing','Text','Goes to the wrong place','Doesn’t work','Accessibility','Other'];
+const NOTE_STATUS = {open:'Open', looking:'Looking into it', fixed:'Fixed', dismissed:'Dismissed'};
+const CHANGE = {new:['✚ New','new'], gone:['– Gone',''], 'looks-different':['◆ Looks different','ch'], 'links-changed':['◆ Links changed','ch'], 'failed-now':['▲ Failed this time','fail'], 'not-recaptured':['Not recaptured','unc']};
+const DOOR = 'Not tested by the scan';
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let PFX = 'atlas.';
+const store = {get(k,d){try{const v=localStorage.getItem(PFX+k);return v==null?d:JSON.parse(v)}catch(e){return d}}, set(k,v){try{localStorage.setItem(PFX+k,JSON.stringify(v))}catch(e){}}};
+function toast(t, ms){ const o=document.querySelector('.toast'); if(o) o.remove(); const el=document.createElement('div'); el.className='toast'; el.setAttribute('role','status'); el.textContent=t; document.body.appendChild(el); setTimeout(()=>el.remove(), ms||2200); }
+
+let A = null, byId = {}, ALIAS = {}, AREAS = [];
+const DEF = {view:'lightbox', area:null, status:null, kind:null, group:'area', q:'', showCode:false, size:150, open:null, sel:null, tabbar:false, stays:false, onlyChanged:false,
+  edge:null, mapKinds:{Button:true,'Opens a sheet':true,Back:false,'Tab bar':false,[DOOR]:true}, mapLabels:false, drawer:false, nFilter:'open', since:'', sinceOnly:'', flow:null, step:0};
+let S = Object.assign({}, DEF);
+const screenOf = id => byId[id] ? id : (ALIAS[id] && byId[ALIAS[id]] ? ALIAS[id] : null);
+
+// ---------- notes, layout and listed prototypes: the page's own store (Claude reads it too) ----------
+let DB = null, NOTES = [], LAYOUT = {pos:{}, labels:[]}, LISTED = [], dbState = 'waiting';
+const noteScreen = n => screenOf(n.screen) || n.screen;
+const notesFor = id => NOTES.filter(n => noteScreen(n) === id && n.status !== 'dismissed');
+async function connectDb(){
+  let db = null;
+  try { if (typeof claude !== 'undefined' && claude.use) db = await claude.use('db'); } catch(e) {}
+  if (!db) { dbState = 'off'; renderNotesBtn(); return; }
+  DB = db; dbState = 'loading';
+  const timer = setTimeout(() => { if (dbState==='loading') { dbState='slow'; renderNotesBtn(); } }, 10000);
+  DB.collection('notes').onSnapshot(snap => {
+    NOTES = snap.docs.map(d => Object.assign({id:d.id}, d.data())).filter(n => !n.source || n.source==='atlas').sort((a,b) => (a.n||0)-(b.n||0));
+    if (!snap.metadata || !snap.metadata.fromCache) { clearTimeout(timer); dbState='ok'; }
+    refreshAll();
+  }, e => { clearTimeout(timer); dbState = 'error:'+(e&&e.code); renderNotesBtn(); });
+  DB.doc('layout/map').onSnapshot(d => {
+    const v = d.exists ? d.data() : null, pos = {};
+    for (const [k,p] of Object.entries(v && v.pos || {})) pos[screenOf(k) || k] = p;
+    LAYOUT = {pos, labels: (v && v.labels || []).map(l=>Object.assign({},l))};
+    const typing = document.activeElement && document.activeElement.closest && document.activeElement.closest('#map [contenteditable]');
+    if (S.view==='map' && !drag && !typing) renderMap();  // never redraw under someone typing a label
+  }, () => {});
+  DB.collection('proposed').onSnapshot(snap => { LISTED = snap.docs.map(d => Object.assign({id:d.id}, d.data())); refreshAll(); }, () => {});
+}
+let layoutSaving = Promise.resolve();
+function saveLayout(){ if (!DB) { toast('Layout changes need the page on claude.ai to be kept'); return; }
+  const body = {pos: LAYOUT.pos, labels: LAYOUT.labels, updated: new Date().toISOString()};
+  layoutSaving = layoutSaving.then(() => DB.doc('layout/map').set(body)).catch(e => toast('Couldn’t save the layout ('+(e&&e.code)+')')); }
+async function saveNote(n){
+  if (!DB) { toast('Notes need the page open on claude.ai'); return false; }
+  try { const {id, ...body} = n; await DB.collection('notes').doc(id).set(body); return true; }
+  catch(e) { toast(e && e.code==='quota_exceeded' ? 'Notes are full: delete some dismissed ones first' : 'Couldn’t save the note ('+(e&&e.code)+')'); return false; }
+}
+async function setNoteStatus(id, st){
+  const n = NOTES.find(x=>x.id===id); if (!n || !DB || n.status===st) return;
+  try { await DB.collection('notes').doc(id).update({status:st, updated:new Date().toISOString()}); } catch(e) { toast('Couldn’t change it ('+(e&&e.code)+')'); }
+}
+function renderNotesBtn(){
+  const open = NOTES.filter(n=>n.status==='open'||n.status==='looking').length;
+  $('notesBtn').textContent = 'Notes · ' + open;
+  $('notesBtn').title = dbState==='off' ? 'Notes are kept in the page’s own store, which only works on claude.ai' : '';
+}
+
+// ---------- helpers ----------
+function fmtWhen(iso){ const d=new Date(iso); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function save(){ const keep = {}; for (const k of ['view','area','status','kind','group','showCode','size','tabbar','stays','onlyChanged','mapKinds','mapLabels','nFilter','since','sinceOnly','flow']) keep[k] = S[k]; store.set('view', keep); }
+const changed = s => s.change && s.change.kind && s.change.kind !== 'not-recaptured';
+const hidden = s => s.status==='uncaptured' || s.status==='notfound';
+const tagOf = s => S.since && s.since ? s.since[S.since] || null : null;
+const flowsWith = id => (A.flows||[]).filter(f => f.steps.some(x => x.screen===id));
+const proposedFor = id => (A.proposed||[]).filter(p => p.screen===id && p.status==='captured');
+const listedFor = id => LISTED.filter(p => (screenOf(p.screen)||p.screen)===id && !(A.proposed||[]).some(q => q.slug && q.slug===p.slug));
+function partsOf(s){ const set = new Set(((s.reg||{}).parts)||[]); (s.elements||[]).forEach(e => { if (e.part) set.add(e.part); }); return [...set]; }
+function hay(s){
+  const key = s.sid || s.id;
+  return [s.title,s.area,s.kind,s.id,s.sid,s.suggested,s.caption,s.how,...(s.links||[]).map(l=>l.label),...notesFor(s.id).map(n=>n.text),
+    ...partsOf(s).map(p=>key+' › '+p),...flowsWith(s.id).map(f=>f.id+' '+f.title)].join(' ').toLowerCase();
+}
+function visible(){
+  const q = S.q.trim().toLowerCase();
+  return A.screens.filter(s => {
+    if (hidden(s) && !S.showCode && S.status!==s.status) return false;
+    if (S.onlyChanged && !changed(s)) return false;
+    if (S.sinceOnly && (S.sinceOnly==='any' ? !tagOf(s) : tagOf(s)!==S.sinceOnly)) return false;
+    if (S.area && s.area!==S.area) return false;
+    if (S.status && s.status!==S.status) return false;
+    if (S.kind && s.kind!==S.kind) return false;
+    if (q && !hay(s).includes(q)) return false;
+    return true;
+  });
+}
+function groups(list){
+  const key = S.group==='kind' ? s=>s.kind : S.group==='status' ? s=>STATUS[s.status] : s=>s.area;
+  const order = S.group==='kind' ? KINDS : S.group==='status' ? Object.values(STATUS) : AREAS;
+  const m = new Map(); order.forEach(k=>m.set(k,[]));
+  list.forEach(s=>{const k=key(s); if(!m.has(k)) m.set(k,[]); m.get(k).push(s)});
+  return [...m].filter(([,v])=>v.length);
+}
+function counts(f){ const c={}; A.screens.forEach(s=>{ if(hidden(s)&&!S.showCode&&f!=='status') return; const k=s[f]; c[k]=(c[k]||0)+1 }); return c; }
+function idChip(s){
+  if (s.sid) return '<span class="sid'+(s.idProblem?' warn':'')+'" title="'+esc(s.idProblem||'Screen ID')+'">'+esc(s.sid)+(s.state?' · '+esc(s.state):'')+'</span>';
+  if (s.suggested) return '<span class="sid none" title="A suggestion only: the app’s register changes in an app build">No ID yet · suggested '+esc(s.suggested)+'</span>';
+  return '';
+}
+function badges(s){
+  const b = [], t = tagOf(s);
+  if (t) b.push('<span class="badge '+(t==='new'?'tnew':'tch')+'">'+(t==='new'?'NEW':'CHANGED')+'</span>');
+  if (!t && s.change && CHANGE[s.change.kind]) { const [tx,c]=CHANGE[s.change.kind]; b.push('<span class="badge '+c+'" title="'+esc(tx+(s.change.pct?' · '+s.change.pct+'% of the screen':''))+'">'+(s.change.kind==='looks-different'?'◆ Changed':tx)+'</span>'); }
+  if (proposedFor(s.id).length || listedFor(s.id).length) b.push('<span class="badge prop">Proposed</span>');
+  if (s.status==='failed') b.push('<span class="badge fail">▲ Failed</span>');
+  else if (s.status==='uncaptured') b.push('<span class="badge unc">Not captured yet</span>');
+  else if (s.status==='notfound') b.push('<span class="badge fail">Not found this scan</span>');
+  else if (s.status!=='gone') {
+    const broken = s.links.filter(l=>l.how==='broken').length;
+    if (s.errors.length) b.push('<span class="badge warn">◆ '+s.errors.length+' error'+(s.errors.length>1?'s':'')+'</span>');
+    else if (broken) b.push('<span class="badge fail">✕ '+broken+' broken</span>');
+    else if (!b.length) b.push('<span class="badge">✓ Captured</span>');
+  }
+  return '<div class="badges">'+b.join('')+'</div>';
+}
+function boxStyle(b){ return 'left:'+(b[0]*100)+'%;top:'+(b[1]*100)+'%;width:'+(b[2]*100)+'%;height:'+(b[3]*100)+'%'; }
+// a note on a named part follows that part, wherever this scan found it
+function noteBox(n, s){
+  if (n.part && s && s.elements) { const e = s.elements.find(x => x.part===n.part); const vw = A.scan.viewport;
+    if (e) return {x:e.x/vw.w, y:e.y/vw.h, w:e.w/vw.w, h:e.h/vw.h}; }
+  return n.box;
+}
+function thumb(s, cls){
+  if (s.status==='captured' || s.status==='gone') {
+    const ch = s.change && s.change.box ? '<span class="chbox" style="'+boxStyle(s.change.box)+'"></span>' : '';
+    const nn = notesFor(s.id).length; const pin = nn ? '<span class="npin" title="'+nn+' note'+(nn>1?'s':'')+'">'+nn+'</span>' : '';
+    return '<div class="th '+(s.status==='gone'?'gone ':'')+(cls||'')+'"><img loading="lazy" decoding="async" src="'+esc(s.shot)+'" alt="">'+ch+pin+'</div>';
+  }
+  if (s.status==='failed') return '<div class="th fail '+(cls||'')+'">Didn’t capture<br>see details</div>';
+  if (s.status==='notfound') return '<div class="th nf '+(cls||'')+'">'+esc(s.title)+'<br>not found this scan</div>';
+  return '<div class="th unc '+(cls||'')+'">'+esc(s.title)+'<br>found in code</div>';
+}
+function card(s){
+  return '<button class="card" data-id="'+esc(s.id)+'" aria-current="'+(S.sel===s.id)+'" aria-label="'+esc(s.title+(s.sid?', '+s.sid:'')+', '+s.kind+', '+(STATUS[s.status]))+'">'+thumb(s)+
+    '<div class="meta">'+idChip(s)+'<b>'+esc(s.title)+'</b>'+(s.caption?'<span class="cap">'+esc(s.caption)+'</span>':'')+
+    '<span>'+esc(s.kind)+(S.group!=='area'?' · '+esc(s.area):'')+(s.links&&s.links.length?' · '+s.links.length+' buttons':'')+'</span>'+badges(s)+'</div></button>';
+}
+
+// ---------- side, banner, grid ----------
+function renderSide(){
+  const ca = counts('area'), cs = counts('status'), ck = counts('kind');
+  const total = A.screens.filter(s=>S.showCode||!hidden(s)).length;
+  const nch = A.screens.filter(changed).length;
+  const nh = A.screens.filter(hidden).length;
+  const areaBtns = '<button class="navrow" data-f="area" data-v="" aria-pressed="'+(!S.area)+'"><span>All screens</span><span class="n">'+total+'</span></button>'+
+    AREAS.filter(a=>ca[a]).map(a=>'<button class="navrow" data-f="area" data-v="'+esc(a)+'" aria-pressed="'+(S.area===a)+'"><span>'+esc(a)+'</span><span class="n">'+ca[a]+'</span></button>').join('');
+  const st = ['captured','failed','uncaptured','notfound','gone'].filter(k=>(k!=='gone'&&k!=='notfound')||cs[k]).map(k=>'<button class="chip '+(k==='failed'||k==='notfound'?'fail':k==='uncaptured'?'unc':'')+'" data-f="status" data-v="'+k+'" aria-pressed="'+(S.status===k)+'">'+STATUS[k]+' '+(cs[k]||0)+'</button>').join('');
+  const kd = KINDS.filter(k=>ck[k]).map(k=>'<button class="chip" data-f="kind" data-v="'+k+'" aria-pressed="'+(S.kind===k)+'">'+k+' '+ck[k]+'</button>').join('');
+  const gb = ['area','kind','status'].map(g=>'<button data-g="'+g+'" aria-pressed="'+(S.group===g)+'">'+g[0].toUpperCase()+g.slice(1)+'</button>').join('');
+  const B = A.scan.baselines || [];
+  const tn = A.screens.filter(s=>tagOf(s)==='new').length, tc = A.screens.filter(s=>tagOf(s)==='changed').length;
+  const since = B.length ? '<div><div class="h">Tags since</div><select id="since" aria-label="Tag screens NEW or CHANGED since a scan"><option value="">Off</option>'+
+      B.map(b=>'<option value="'+esc(b.id)+'" '+(S.since===b.id?'selected':'')+'>'+esc(b.version||'?')+' · '+fmtWhen(b.at)+'</option>').join('')+'</select>'+
+      (S.since?'<div class="chips" style="margin-top:8px"><button class="chip tnew" data-so="new" aria-pressed="'+(S.sinceOnly==='new')+'">NEW '+tn+'</button><button class="chip tch" data-so="changed" aria-pressed="'+(S.sinceOnly==='changed')+'">CHANGED '+tc+'</button></div>':'')+'</div>' : '';
+  const ids = A.ids;
+  const idsLine = ids ? '<p class="note" style="padding:0 10px;margin:0">Screen IDs from the app’s register ('+ids.register+')'+(ids.noId.length?' · <b style="color:var(--amber)">'+ids.noId.length+' with no ID yet</b>':'')+(ids.notFound.length?' · '+ids.notFound.length+' not found this scan':'')+'.</p>' : '';
+  $('side').innerHTML =
+    '<div><div class="h">Areas</div>'+areaBtns+'</div>'+
+    (A.scan.prev?'<div><div class="h">Since last scan</div><div class="chips"><button class="chip ch" data-only="1" aria-pressed="'+S.onlyChanged+'">◆ Changed '+nch+'</button></div></div>':'')+
+    since+
+    '<div><div class="h">Status</div><div class="chips">'+st+'</div></div>'+
+    '<div><div class="h">Kind</div><div class="chips">'+kd+'</div></div>'+
+    '<div><div class="h">Group by</div><div class="seg" style="margin:0 10px" role="group" aria-label="Group by">'+gb+'</div></div>'+
+    '<label class="toggle"><input type="checkbox" id="showCode" '+(S.showCode?'checked':'')+'> Show screens not captured ('+nh+')</label>'+
+    idsLine+
+    '<p class="note" style="padding:0 10px;margin:0">Saved screenshots from a scan with '+esc(A.scan.data||'sample data')+', not live. “Found in code” means the app can show it, but nothing the scan tapped opened it.</p>';
+  $('mchips').innerHTML = '<button class="chip" data-f="area" data-v="" aria-pressed="'+(!S.area&&!S.status&&!S.onlyChanged&&!S.sinceOnly)+'">All '+total+'</button>'+
+    (A.scan.prev?'<button class="chip ch" data-only="1" aria-pressed="'+S.onlyChanged+'">◆ Changed '+nch+'</button>':'')+
+    (S.since?'<button class="chip tnew" data-so="new" aria-pressed="'+(S.sinceOnly==='new')+'">NEW '+tn+'</button><button class="chip tch" data-so="changed" aria-pressed="'+(S.sinceOnly==='changed')+'">CHANGED '+tc+'</button>':'')+
+    AREAS.filter(a=>ca[a]&&!EXTRA_AREAS.includes(a)).map(a=>'<button class="chip" data-f="area" data-v="'+esc(a)+'" aria-pressed="'+(S.area===a)+'">'+esc(a)+'</button>').join('')+
+    '<button class="chip fail" data-f="status" data-v="failed" aria-pressed="'+(S.status==='failed')+'">▲ Failed '+(cs.failed||0)+'</button>'+
+    '<button class="chip unc" data-f="status" data-v="uncaptured" aria-pressed="'+(S.status==='uncaptured')+'">In code only '+(cs.uncaptured||0)+'</button>'+
+    (B.length?'<select class="sel" id="since2" aria-label="Tags since" style="height:32px;margin:0"><option value="">Tags since: off</option>'+B.map(b=>'<option value="'+esc(b.id)+'" '+(S.since===b.id?'selected':'')+'>Since '+esc(b.version||'?')+' · '+fmtWhen(b.at)+'</option>').join('')+'</select>':'');
+}
+function banner(){
+  const p = A.scan.prev; let h = '';
+  if (p) {
+    const c = k => A.screens.filter(s=>s.change&&s.change.kind===k).length;
+    h += '<div class="banner"><div style="display:flex;flex-direction:column;gap:3px;min-width:240px"><strong>Changes since the last scan</strong>'+
+      '<span class="note">'+esc(p.version)+' ('+fmtWhen(p.at)+') → '+esc(A.scan.version)+' ('+fmtWhen(A.scan.at)+')</span></div>'+
+      '<div class="sum"><span class="badge new">✚ '+c('new')+' new</span><span class="badge">– '+c('gone')+' gone</span><span class="badge ch">◆ '+c('looks-different')+' look different</span><span class="badge ch">'+c('links-changed')+' only links changed</span><span class="badge fail">▲ '+c('failed-now')+' failed this time</span>'+
+      (dbState==='ok'?'<span class="badge" style="color:var(--green);border-color:var(--greenB)">'+NOTES.length+' notes kept</span>':'')+'</div>'+
+      (p.between&&p.between.length?'<span class="note" style="flex-basis:100%">Released in between: '+p.between.map(c=>'<a href="'+esc(c.url)+'" target="_blank" rel="noopener">'+esc(c.version)+(c.q?' ('+esc(c.q)+')':'')+'</a> '+esc(c.title.replace(/\s*\([A-Z]+\d+\)\s*$/,''))).join(' · ')+'</span>':'')+
+      '<button class="btn sm" data-only="1" style="margin-left:auto">'+(S.onlyChanged?'Show everything':'Show only changes')+'</button></div>';
+  }
+  if (S.since) {
+    const b = (A.scan.baselines||[]).find(x=>x.id===S.since);
+    if (b) h += '<div class="banner" style="background:#1d2a22;border-color:#2c4a36"><strong>Tagged since '+esc(b.version||'?')+' ('+fmtWhen(b.at)+')</strong><span class="note">NEW: not in that scan · CHANGED: looks different from it. The scan can’t tell which release changed a screen.</span>'+
+      '<button class="btn sm" id="sinceOff" style="margin-left:auto">Turn tags off</button></div>';
+  }
+  return h;
+}
+function renderMain(){
+  const list = visible();
+  const b = banner();
+  if (!list.length){ $('main').innerHTML = b+'<div class="empty">No screens match. <button class="more" id="clearf">Clear filters</button></div>'; return; }
+  $('main').innerHTML = b+groups(list).map(([g,v])=>'<section class="group"><div class="ghead"><h2>'+esc(g)+'</h2><span>'+v.length+' screen'+(v.length>1?'s':'')+'</span></div><div class="grid">'+v.map(card).join('')+'</div></section>').join('');
+}
+
+// ---------- details ----------
+function linkRow(l){
+  const t = byId[l.to];
+  const [lab, cls] = HOW[l.how] || [l.how,''];
+  const dest = l.how==='seen' ? (t ? esc(t.title)+(l.family?' <small>'+esc(l.family)+' (same page layout)</small>':'') : esc(l.toLabel||'somewhere not in this scan'))
+    : l.how==='stays' ? 'stays here' : l.how==='broken' && l.toLabel ? esc(l.toLabel) : '';
+  const why = l.why ? '<small>'+esc(l.why)+'</small>' : '';
+  const tags = '<span class="tag '+cls+'">'+lab+'</span>'+(l.forced?' <span class="tag" title="Another layer covered it, so the scan tapped the button itself">Forced tap</span>':'');
+  const inner = '<span class="lt">'+esc(l.label)+(dest?' <span style="color:var(--mute2)">→</span> '+dest:'')+why+'</span>'+tags;
+  return t ? '<button class="lrow" data-go="'+esc(t.id)+'" title="Open '+esc(t.title)+'">'+inner+'</button>' : '<div class="lrow">'+inner+'</div>';
+}
+function doorRow(d, out){
+  const o = byId[out ? d.to : d.from];
+  const inner = '<span class="lt">'+(out?'':esc(o?o.title:(d.fromRef||'?'))+' <span style="color:var(--mute2)">·</span> ')+esc(d.how||d.label)+(out?' <span style="color:var(--mute2)">→</span> '+esc(o?o.title:(d.toRef||'?')):'')+'<small>Written by hand: '+esc(d.kind)+'</small></span><span class="tag door">'+DOOR+'</span>';
+  return o ? '<button class="lrow" data-go="'+esc(o.id)+'">'+inner+'</button>' : '<div class="lrow">'+inner+'</div>';
+}
+function changeSect(s){
+  const c = s.change; if (!c) return '';
+  let h = '<div class="sect"><div class="h">Since the last scan · '+esc((CHANGE[c.kind]||[c.kind])[0])+'</div>';
+  if (c.prevShot && s.status==='captured' && c.kind!=='links-changed') {
+    h += '<div class="cmp"><figure><div class="pic"><img src="'+esc(c.prevShot)+'" alt="Before"></div><figcaption>Before · '+esc(A.scan.prev.version)+'</figcaption></figure>'+
+         '<figure><div class="pic"><img src="'+esc(s.shot)+'" alt="After">'+(c.box?'<span class="chbox" style="'+boxStyle(c.box)+'"></span>':'')+'</div><figcaption>Now · '+esc(A.scan.version)+(c.pct?' · '+c.pct+'% of the screen differs':'')+'</figcaption></figure></div>'+
+         wipe('wc', c.prevShot, s.shot, 'Before', 'Now');
+  } else if (c.kind==='gone') h += '<p class="note">This screen was in the last scan but isn’t in this one. The picture is from the last scan. Notes on it are kept.</p>';
+  else if (c.kind==='new') h += '<p class="note">First seen in this scan.</p>';
+  if (c.links) {
+    const row = (x, add) => '<div class="lrow"><span class="lt">'+(add?'✚ ':'– ')+esc(x[0])+(x[1]?' → '+esc((byId[x[1]]||{}).title||x[1]):'')+'</span><span class="tag">'+esc((HOW[x[2]]||[x[2]])[0])+'</span></div>';
+    h += c.links.added.map(x=>row(x,true)).join('') + c.links.removed.map(x=>row(x,false)).join('');
+  }
+  if (c.between && c.between.length) h += '<p class="note">Released in between: '+c.between.map(esc).join(', ')+'. One of these probably changed it; the scan can’t tell which.</p>';
+  return h+'</div>';
+}
+// a wipe between two pictures of the same screen: drag the slider from one to the other
+function wipe(key, under, over, a, b){
+  return '<div class="wipe" data-wipe="'+key+'"><img src="'+esc(over)+'" alt=""><div class="top" style="width:50%"><img src="'+esc(under)+'" alt=""></div><div class="bar" style="left:50%"></div></div>'+
+    '<label class="note" style="display:flex;align-items:center;gap:8px">'+esc(a)+' <input type="range" data-wiper="'+key+'" min="0" max="100" value="50" style="flex:1;accent-color:#f5b13d" aria-label="Wipe between '+esc(a)+' and '+esc(b)+'"> '+esc(b)+'</label>';
+}
+function proposedSect(s){
+  const P = proposedFor(s.id), L = listedFor(s.id);
+  let h = '<div class="sect"><div class="h">Proposed changes · '+(P.length+L.length)+'</div>';
+  for (const p of P) {
+    const url = p.url || (p.slug ? 'https://claude.ai/artifact/'+p.slug : '');
+    h += '<p class="note" style="margin:0 0 6px"><b style="color:var(--ink)">'+esc(p.title||'A prototype')+'</b>'+(p.version?' · version '+esc(p.version):'')+(url?' · <a href="'+esc(url)+'" target="_blank" rel="noopener">Open the prototype</a>':'')+'</p>'+
+      '<div class="cmp"><figure><div class="pic"><img src="'+esc(s.shot)+'" alt="The real screen now"></div><figcaption>Now · '+esc(A.scan.version)+'</figcaption></figure>'+
+      '<figure><div class="pic"><img src="'+esc(p.shot)+'" alt="The proposed screen"></div><figcaption>Proposed · '+esc(p.title||'prototype')+'</figcaption></figure></div>'+
+      wipe('wp-'+p.pid, s.shot, p.shot, 'Now', 'Proposed');
+  }
+  for (const p of L) h += '<div class="lrow"><span class="lt">'+esc(p.title||'A prototype')+'<small>Listed here; the next rescan shows it beside this screen.</small></span>'+(p.url?'<a class="tag" href="'+esc(p.url)+'" target="_blank" rel="noopener">Open</a>':'')+'</div>';
+  h += S.listing===s.id
+    ? '<form class="pform" id="pform"><span class="note">The prototype’s link on claude.ai, and what it changes</span><input id="plink" placeholder="https://claude.ai/artifact/…" aria-label="Prototype link" required><input id="ptitle" placeholder="e.g. Save button moved up" aria-label="What it changes"><div style="display:flex;gap:8px"><button type="button" class="btn sm" id="pcancel">Cancel</button><button class="btn sm pri" type="submit">List it</button></div></form>'
+    : '<button class="more" id="plist">+ List a prototype for this screen</button>';
+  return h+'</div>';
+}
+function renderDet(){
+  const d = $('det');
+  if (S.edge) return renderEdge();
+  const s = byId[S.open];
+  if (!s){ d.classList.remove('open'); d.innerHTML=''; return; }
+  d.classList.add('open');
+  const list = visible(), i = list.findIndex(x=>x.id===s.id);
+  const own = s.linksOf && byId[s.linksOf];
+  const L = s.links||[];
+  const main = L.filter(l=>l.kind!=='Tab bar' && l.how!=='stays');
+  const tabbar = L.filter(l=>l.kind==='Tab bar'), stays = L.filter(l=>l.how==='stays' && l.kind!=='Tab bar');
+  const doorsOut = (A.doors||[]).filter(x=>x.from===s.id), doorsIn = (A.doors||[]).filter(x=>x.to===s.id);
+  const from = (s.from||[]).filter((f,j,a)=>a.findIndex(x=>x.from===f.from)===j && byId[f.from]);
+  const nn = NOTES.filter(n=>noteScreen(n)===s.id);
+  const vp = A.scan.viewport;
+  const shot = (s.status==='captured'||s.status==='gone') ? '<button class="dshot" id="dfull" aria-label="Show full length"><img src="'+esc(s.shot)+'" alt="'+esc(s.title)+' screenshot">'+nn.filter(n=>n.status!=='dismissed').map(n=>{const b=noteBox(n,s);return '<span class="mark" style="'+boxStyle([b.x,b.y,b.w,b.h])+'"><b>'+n.n+'</b></span>'}).join('')+'</button>'
+    : '<div class="th '+(s.status==='failed'?'fail':s.status==='notfound'?'nf':'unc')+'" style="flex:0 0 150px">'+(s.status==='failed'?'Didn’t capture':s.status==='notfound'?'Not found this scan':'Not captured yet')+'</div>';
+  const docs = (s.docs||[]).map(x=>'<a href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.file.replace('.md',''))+' › '+esc(x.heading)+'</a>').join('<br>') || ((s.reg&&s.reg.docs)?'<a href="'+esc(s.reg.docs)+'" target="_blank" rel="noopener">'+esc(s.reg.docs)+'</a>':'<span class="note">No section found</span>');
+  const m = s.mention ? '<a href="'+esc(s.mention.url)+'" target="_blank" rel="noopener">'+esc(s.mention.version)+(s.mention.q?' ('+esc(s.mention.q)+')':'')+'</a> · '+esc(s.mention.title.replace(/\s*\([A-Z]+\d+\)\s*$/,'')) : '<span class="note">Not in any changelog headline</span>';
+  const via = s.via && byId[s.via.from] ? 'Tapping “'+esc(s.via.label)+'” on <button class="more" data-go="'+esc(s.via.from)+'">'+esc(byId[s.via.from].title)+'</button>' : s.found==='Root' ? 'A starting screen of the scan' : '';
+  const idRow = s.sid ? esc(s.sid)+(s.state?' · '+esc(s.state):'')+'<br><span class="note">'+(s.idFrom==='screen'?'Read from the screen itself':'From the app’s register, by its code key')+(s.idProblem?' · '+esc(s.idProblem):'')+'</span>'
+    : s.suggested ? '<span style="color:var(--amber)">No ID yet · suggested '+esc(s.suggested)+'</span><br><span class="note">A suggestion only: the app’s register changes in an app build.</span>'
+    : A.ids ? '<span class="note">None (a state of a screen with no ID)</span>' : '';
+  const t = tagOf(s), fl = flowsWith(s.id), parts = partsOf(s);
+  d.innerHTML =
+    '<div class="dtop"><button class="ib" data-step="-1" aria-label="Previous screen" '+(i<=0?'disabled':'')+'>‹</button><button class="ib" data-step="1" aria-label="Next screen" '+(i<0||i>=list.length-1?'disabled':'')+'>›</button>'+
+    '<div class="dtitle"><strong>'+esc(s.title)+'</strong><span>'+(s.sid?esc(s.sid)+' · ':'')+esc(s.kind)+' · '+esc(s.area)+(i>=0?' · '+(i+1)+' of '+list.length:'')+'</span></div>'+
+    '<button class="ib" style="margin-left:auto" id="dclose" aria-label="Close details">✕</button></div>'+
+    '<div class="dbody">'+
+      (s.caption?'<p class="dcap">'+esc(s.caption)+'</p>':'')+
+      '<div class="dhero">'+shot+'<dl class="kv">'+
+        (idRow?'<div><dt>Screen ID</dt><dd>'+idRow+'</dd></div>':'')+
+        '<div><dt>Status</dt><dd>'+STATUS[s.status]+(t?' · <span class="badge '+(t==='new'?'tnew':'tch')+'">'+(t==='new'?'NEW':'CHANGED')+'</span>':'')+(s.why?'<br><span class="note">'+esc(s.why)+'</span>':'')+'</dd></div>'+
+        (s.status==='captured'?'<div><dt>Saved screenshot</dt><dd>'+fmtWhen(A.scan.at)+' · '+esc(vp.name)+' '+vp.w+' × '+vp.h+(s.fullHeight>vp.h?' · full length '+s.fullHeight+' pt':'')+'<br><span class="note">Not live: from the scan of '+esc(A.scan.version)+'</span></dd></div>':'')+
+        (via?'<div><dt>Found by</dt><dd>'+via+'</dd></div>':'')+
+        (s.setup&&s.setup.length?'<div><dt>Set up with</dt><dd>'+esc(s.setup.join(', '))+'</dd></div>':'')+
+        '<div><dt>Explained in</dt><dd>'+docs+'</dd></div>'+
+        '<div><dt>Last mentioned in changelog</dt><dd>'+m+'</dd></div>'+
+        '<div><dt>Errors on this screen</dt><dd>'+(s.errors.length?s.errors.length:'None')+'</dd></div>'+
+      '</dl></div>'+
+      (s.errors.length?'<div class="err">'+s.errors.map(esc).join('<br>')+'</div>':'')+
+      '<div class="acts">'+(s.status==='captured'?'<button class="btn pri" id="addNote">Add note · N</button><button class="btn" id="dfull2">Full length · F</button>':'')+
+        (A.app.url?'<a class="btn" href="'+esc(A.app.url)+'" target="_blank" rel="noopener">Open the live app</a>':'')+'</div>'+
+      (fl.length?'<div class="sect"><div class="h">In flows · '+fl.length+'</div>'+fl.map(f=>f.steps.filter(x=>x.screen===s.id).map(x=>'<button class="lrow" data-flow="'+esc(f.id)+'" data-fstep="'+f.steps.indexOf(x)+'"><span class="lt">'+esc(f.id)+' · '+esc(f.title)+'<small>Step '+x.n+(x.moment?' · '+esc(x.moment):'')+'</small></span><span class="tag">Flow</span></button>').join('')).join('')+'</div>':'')+
+      changeSect(s)+
+      (s.status==='captured'?proposedSect(s):'')+
+      (nn.length?'<div class="sect"><div class="h">Notes · '+nn.length+'</div>'+nn.map(noteRow).join('')+'</div>':'')+
+      (own?'<div class="sect"><div class="h">Buttons</div><p class="note">The same screen in another state: its buttons are listed on <button class="more" data-go="'+esc(own.id)+'">'+esc(own.title)+'</button>.</p></div>':'')+
+      ((L.length||doorsOut.length)?'<div class="sect"><div class="h">Leads to · '+(main.length+doorsOut.length)+'</div>'+(main.length?main.map(linkRow).join(''):(doorsOut.length?'':'<p class="note">Only the tab bar and buttons that change this screen.</p>'))+
+        doorsOut.map(x=>doorRow(x,true)).join('')+
+        (stays.length?'<button class="more" data-t="stays">'+(S.stays?'Hide':'Show')+' '+stays.length+' that change this screen</button>'+(S.stays?stays.map(linkRow).join(''):''):'')+
+        (tabbar.length?'<br><button class="more" data-t="tabbar">'+(S.tabbar?'Hide':'Show')+' tab bar ('+tabbar.length+')</button>'+(S.tabbar?tabbar.map(linkRow).join(''):''):'')+'</div>':'')+
+      '<div class="sect"><div class="h">Comes from · '+(from.length+doorsIn.length)+'</div>'+(from.length?from.map(f=>{const o=byId[f.from];return '<button class="lrow" data-go="'+esc(f.from)+'"><span class="lt">'+esc(o.title)+' <small>'+esc(f.label)+'</small></span><span class="tag '+(HOW[f.how]||['',''])[1]+'">'+(HOW[f.how]||[f.how])[0]+'</span></button>'}).join('')
+        : (doorsIn.length?'':'<p class="note">'+(s.status==='uncaptured'?'No button the scan tapped leads here yet.':s.status==='notfound'?'Not found this scan.':'No button in this scan leads here: it’s a starting screen, or it opens only from somewhere not scanned.')+'</p>'))+
+        doorsIn.map(x=>doorRow(x,false)).join('')+'</div>'+
+      (parts.length?'<div class="sect"><div class="h">Named parts · '+parts.length+'</div><div class="parts">'+parts.map(p=>'<span>'+esc((s.sid||s.id)+' › '+p)+'</span>').join('')+'</div></div>':'')+
+      (s.how?'<div class="sect"><div class="h">How the scan opened it</div><div class="code">'+esc(s.how)+'</div></div>':'')+
+    '</div>';
+  requestAnimationFrame(sizeWipes);
+}
+function sizeWipes(){ document.querySelectorAll('[data-wipe]').forEach(w => { const i = w.querySelector('.top img'); if (i) i.style.width = w.clientWidth+'px'; }); }
+function renderEdge(){
+  const d = $('det'), e = S.edge; d.classList.add('open');
+  const f = byId[e.from], t = byId[e.to], door = e.kind===DOOR;
+  d.innerHTML = '<div class="dtop"><div class="dtitle"><strong>Link</strong><span>'+esc(e.kind)+'</span></div><button class="ib" style="margin-left:auto" id="dclose" aria-label="Close">✕</button></div>'+
+    '<div class="dbody"><div class="acts"><button class="btn" data-go="'+esc(f.id)+'">'+esc(f.title)+'</button><span style="align-self:center;color:var(--sel)">→</span><button class="btn" data-go="'+esc(t.id)+'">'+esc(t.title)+'</button></div>'+
+    '<dl class="kv"><div><dt>Kind</dt><dd>'+esc(door?e.doorKind+' · '+DOOR:e.kind)+'</dd></div>'+
+    '<div><dt>'+(door?'How':'Tapped')+'</dt><dd>'+e.labels.map(esc).join('<br>')+'</dd></div>'+
+    '<div><dt>How sure</dt><dd>'+(door?'Written by hand in the app’s settings. The scan can’t do this, so it hasn’t checked it.':'✓ Seen working: the scan tapped it on '+esc(f.title)+' and landed on '+esc(t.title))+'</dd></div>'+
+    (door?'':'<div><dt>Action in the code</dt><dd class="code">'+e.actions.map(esc).join(', ')+'</dd></div>')+
+    '<div><dt>Last checked</dt><dd>'+(door?'Never by the scan':fmtWhen(A.scan.at))+'</dd></div></dl>'+
+    '<p class="note">The map draws links the scan saw working, plus dotted lines for doors written by hand that the scan can’t test.</p></div>';
+}
+function noteRow(n){
+  const s = byId[noteScreen(n)], b = noteBox(n, s);
+  const bg = s && s.shot ? 'background-image:url(\''+esc(s.shot)+'\');background-size:'+(100/Math.max(b.w,.05))+'% auto;background-position:'+(b.w<1?(b.x/(1-b.w)*100):0)+'% '+(b.h<1?(b.y/(1-b.h)*100):0)+'%' : '';
+  return '<div class="nrow"><button class="crop" style="'+bg+'" data-nopen="'+esc(n.id)+'" aria-label="Show note '+n.n+' on its screen"></button>'+
+    '<div class="t"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><b>N-'+String(n.n).padStart(3,'0')+'</b><span class="note">'+esc((n.sid?n.sid+' · ':'')+(s?s.title:n.screenTitle||n.screen))+'</span>'+(n.kind?'<span class="tag">'+esc(n.kind)+'</span>':'')+'</div>'+
+    '<span style="font-size:13px;line-height:1.35">'+esc(n.text)+'</span>'+
+    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select data-nstatus="'+esc(n.id)+'" aria-label="Status of note '+n.n+'">'+Object.entries(NOTE_STATUS).map(([k,v])=>'<option value="'+k+'" '+(n.status===k?'selected':'')+'>'+v+'</option>').join('')+'</select>'+
+    '<span class="note">'+esc(n.part?'part '+n.part:n.element?n.element.tag+(n.element.cls?'.'+n.element.cls.split(' ')[0]:''):'marked area')+'</span>'+(!s?'<span class="note" style="color:var(--amber)">screen not in this scan</span>':'')+'</div></div></div>';
+}
+
+// ---------- notes drawer ----------
+function renderDrawer(){
+  const d = $('drawer'); d.classList.toggle('open', S.drawer); if (!S.drawer) return;
+  const f = S.nFilter, list = NOTES.filter(n => f==='all' || (f==='open' ? (n.status==='open'||n.status==='looking') : n.status===f));
+  const off = dbState==='off' ? '<div class="hint" style="margin:10px 14px 0">Notes are kept in this page’s own store, which works when the page is open on claude.ai. Here it can’t save them.</div>'
+    : dbState.startsWith('error') ? '<div class="hint" style="margin:10px 14px 0">Couldn’t reach the notes store ('+esc(dbState.slice(6))+').</div>'
+    : dbState==='slow' ? '<div class="hint" style="margin:10px 14px 0">Still reaching the notes store; what’s shown may be out of date.</div>' : '';
+  d.innerHTML = '<div class="dtop"><div class="dtitle"><strong>Notes</strong><span>'+NOTES.length+' kept · Claude can read these</span></div><button class="ib" style="margin-left:auto" id="nclose" aria-label="Close notes">✕</button></div>'+off+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px 0">'+[['open','Open'],['fixed','Fixed'],['dismissed','Dismissed'],['all','All']].map(([k,v])=>'<button class="chip" data-nf="'+k+'" aria-pressed="'+(f===k)+'">'+v+'</button>').join('')+'</div>'+
+    '<div class="nlist">'+(list.length?list.map(noteRow).join(''):'<p class="note">No notes here yet. Open a screen and press <b>Add note</b> (or N), then tap a part of the screen or drag a box.</p>')+'</div>'+
+    '<div style="padding:12px 14px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" id="exportBtn" '+(NOTES.length?'':'disabled')+'>Export for Claude</button><span class="note" style="flex:1;min-width:160px">Or say <b>“check my notes”</b> in a Claude chat: Claude reads these, and the notes on the prototypes listed here'+(LISTED.length?' ('+LISTED.length+')':'')+'.</span></div>';
+}
+
+// ---------- note mode ----------
+let NM = null; // {s, mode:'box'|'tap', sel:{x,y,w,h} in points, el, hover, drag}
+function openNote(id){
+  const s = byId[id]; if (!s || s.status!=='captured') return;
+  NM = {s, mode: s.elements && s.elements.length ? 'tap' : 'box', sel:null, el:null, hover:null, text:'', kind:''};
+  $('nmode').classList.add('open'); renderNM();
+}
+function nmScale(){ const vw = A.scan.viewport, phone = window.innerWidth <= 760; const h = phone ? window.innerHeight*0.62 : Math.min(window.innerHeight - 110, vw.h); return Math.min(h / vw.h, (window.innerWidth - 32) / vw.w, 1); }
+function hitAll(x, y){ return (NM.s.elements||[]).filter(e => x>=e.x && y>=e.y && x<=e.x+e.w && y<=e.y+e.h).sort((a,b)=>a.w*a.h-b.w*b.h).filter((e,i,a)=>!i||e.w*e.h>a[i-1].w*a[i-1].h*1.08); }
+function pickPart(i){ NM.idx = Math.max(0, Math.min(NM.stack.length-1, i)); const h = NM.stack[NM.idx]; NM.sel = {x:h.x,y:h.y,w:h.w,h:h.h}; NM.el = h; }
+function hitEl(x, y){ let best = null; for (const e of NM.s.elements||[]) if (x>=e.x && y>=e.y && x<=e.x+e.w && y<=e.y+e.h && (!best || e.w*e.h < best.w*best.h)) best = e; return best; }
+const WORD = {button:'Button', a:'Link', input:'Field', textarea:'Field', select:'Menu', img:'Picture', svg:'Icon', h1:'Heading', h2:'Heading', h3:'Heading', p:'Text', li:'Row', label:'Label', nav:'Bar', header:'Header', footer:'Footer'};
+function partName(el, s){ if (!el) return 'Box on '+s.title; if (el.part) return el.part; return (WORD[el.tag]||'Box')+': '+(el.text||el.cls||el.tag).slice(0,40); }
+function renderNM(){
+  const s = NM.s, vw = A.scan.viewport, k = nmScale(), W = Math.round(vw.w*k), H = Math.round(vw.h*k);
+  const px = b => 'left:'+b.x*k+'px;top:'+b.y*k+'px;width:'+b.w*k+'px;height:'+b.h*k+'px';
+  const old = notesFor(s.id).map(n=>{const b=noteBox(n,s);return '<span class="mark old" style="'+px({x:b.x*vw.w,y:b.y*vw.h,w:b.w*vw.w,h:b.h*vw.h})+'"><b>'+n.n+'</b></span>'}).join('');
+  const next = NOTES.reduce((m,n)=>Math.max(m,n.n||0),0)+1;
+  const el = NM.el;
+  $('nmode').innerHTML = '<div class="otop"><button class="btn" id="nmClose">‹ Back</button><strong>'+esc((s.sid?s.sid+' · ':'')+s.title)+'</strong><span class="note">saved '+fmtWhen(A.scan.at)+' · '+vw.w+' × '+vw.h+'</span>'+
+    '<span class="hint" style="padding:6px 10px">'+(NM.mode==='tap'?'Tap a part of the screen':'Drag a box around the problem')+' · Esc to stop</span>'+
+    '<div class="seg" role="group" aria-label="How to mark" style="margin-left:auto"><button data-nmm="tap" aria-pressed="'+(NM.mode==='tap')+'" '+(s.elements&&s.elements.length?'':'disabled')+'>Tap a part</button><button data-nmm="box" aria-pressed="'+(NM.mode==='box')+'">Box</button></div></div>'+
+    '<div class="nm"><div class="stage" id="stage" style="width:'+W+'px;height:'+H+'px"><img src="'+esc(s.shot)+'" alt="'+esc(s.title)+'">'+old+
+      (NM.hover&&!NM.sel?'<span class="hov" style="'+px(NM.hover)+'"></span>':'')+(NM.sel?'<span class="mark" style="'+px(NM.sel)+'"><b>'+next+'</b></span>':'')+'</div>'+
+    '<form class="nform" id="nform"><div style="display:flex;justify-content:space-between;align-items:center"><strong>Note '+next+'</strong><span class="note">on '+esc(s.title)+'</span></div>'+
+      (NM.sel?'':'<p class="note" style="margin:0">'+(NM.mode==='tap'?'Tap the part of the screen the note is about. You can switch to Box for an area.':'Drag on the screen to mark an area.')+'</p>')+
+      (NM.mode==='tap'&&NM.sel?'<div style="display:flex;gap:6px;align-items:center"><span class="note" style="flex:1">Marked: '+esc(partName(el, s))+(el&&el.part?'':(el&&el.in?' (in '+esc(el.in)+')':''))+'</span>'+(NM.stack&&NM.stack.length>1?'<button type="button" class="btn sm" data-part="1" '+(NM.idx>=NM.stack.length-1?'disabled':'')+'>Bigger part</button><button type="button" class="btn sm" data-part="-1" '+(NM.idx<=0?'disabled':'')+'>Smaller</button>':'')+'</div>':'')+
+      '<label class="note" style="display:flex;flex-direction:column;gap:6px">What’s wrong?<textarea id="ntext" placeholder="e.g. this banner wraps to two lines here but fits on one elsewhere">'+esc(NM.text)+'</textarea></label>'+
+      '<div style="display:flex;flex-direction:column;gap:6px"><span class="note">Kind (optional)</span><div class="kinds">'+NOTE_KINDS.map(x=>'<button type="button" class="chip" data-nk="'+esc(x)+'" aria-pressed="'+(NM.kind===x)+'">'+esc(x)+'</button>').join('')+'</div></div>'+
+      (NM.sel?'<details class="note"><summary style="cursor:pointer">Details saved with it</summary><div class="code" style="margin-top:6px">'+esc((s.sid?s.sid+' · ':'')+s.title)+' · scan '+esc(A.scan.id)+'<br>box '+NM.sel.x+', '+NM.sel.y+' · '+NM.sel.w+' × '+NM.sel.h+' pt'+
+        (el?'<br>'+(el.part?'part '+esc(el.part)+'<br>':'')+esc(el.tag+(el.cls?'.'+el.cls.replace(/ /g,'.'):''))+'<br>“'+esc(el.text)+'”<br>'+esc(el.path)+'<br>font '+esc(el.style.font)+' · padding '+esc(el.style.pad)+' · radius '+esc(el.style.radius):'')+'</div></details>':'')+
+      '<div style="display:flex;gap:8px"><button type="button" class="btn" id="nmCancel" style="flex:1;justify-content:center">Cancel</button><button type="submit" class="btn pri" id="nmSave" style="flex:1;justify-content:center" '+(NM.sel?'':'disabled')+'>Save</button></div>'+
+      (dbState==='off'?'<p class="note" style="margin:0">Saving needs the page open on claude.ai.</p>':'')+
+    '</form></div>';
+  wireStage(k);
+}
+function wireStage(k){
+  const st = $('stage'); if (!st) return;
+  const pt = e => { const r = st.getBoundingClientRect(); return {x: Math.max(0, Math.min(A.scan.viewport.w, (e.clientX - r.left)/k)), y: Math.max(0, Math.min(A.scan.viewport.h, (e.clientY - r.top)/k))}; };
+  st.addEventListener('pointermove', e => {
+    if (NM.drag) { const p = pt(e), a = NM.drag; NM.sel = {x:Math.round(Math.min(a.x,p.x)), y:Math.round(Math.min(a.y,p.y)), w:Math.round(Math.abs(p.x-a.x)), h:Math.round(Math.abs(p.y-a.y))}; keepText(); renderNM(); return; }
+    if (NM.mode==='tap' && !NM.sel && e.pointerType==='mouse') { const h = hitEl(pt(e).x, pt(e).y); if (h !== NM.hover) { NM.hover = h; keepText(); renderNM(); } }
+  });
+  st.addEventListener('pointerdown', e => {
+    e.preventDefault(); keepText();
+    const p = pt(e);
+    if (NM.mode==='tap') { NM.stack = hitAll(p.x, p.y); if (NM.stack.length) { pickPart(0); renderNM(); $('ntext').focus(); } return; }
+    st.setPointerCapture(e.pointerId); NM.drag = p; NM.el = null; NM.sel = null;
+  });
+  st.addEventListener('pointerup', () => { if (!NM.drag) return; NM.drag = null; if (NM.sel && (NM.sel.w < 6 || NM.sel.h < 6)) NM.sel = null; renderNM(); if (NM.sel) $('ntext').focus(); });
+}
+function keepText(){ const t = $('ntext'); if (t) NM.text = t.value; }
+// one note, in note format v1 (SHARED.md), plus the Atlas's own fields
+function makeNote(s, sel, el, text, kind){
+  const vw = A.scan.viewport, n = NOTES.reduce((m,x)=>Math.max(m,x.n||0),0)+1, now = new Date().toISOString();
+  return {id:'a-'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), v:1, n, source:'atlas', app:A.app.name,
+    screen:s.id, screenTitle:s.title, sid:s.sid||null, part: el && el.part || null, name: partName(el, s),
+    box:{x:+(sel.x/vw.w).toFixed(4), y:+(sel.y/vw.h).toFixed(4), w:+(sel.w/vw.w).toFixed(4), h:+(sel.h/vw.h).toFixed(4)},
+    px:{x:sel.x, y:sel.y, w:sel.w, h:sel.h},
+    element: el ? {tag:el.tag, cls:el.cls, text:/field\)$/.test(el.text||'')?'':el.text, path:el.path, style:el.style, a:el.a||''} : null,
+    text: (text||'').trim(), kind: kind||'', status:'open',
+    from:{scan:{id:A.scan.id, version:A.scan.version, commit:(A.scan.commit||'').split(' ')[0]}, kit:KIT_VERSION},
+    area:s.area, shot:s.shot, how:s.how, docs:(s.docs||[]).map(d=>d.file+' › '+d.heading), errors:s.errors.length,
+    scan:{viewport:vw, data:A.scan.data, at:A.scan.at}, created:now, updated:now};
+}
+async function submitNote(){
+  keepText(); if (!NM.sel) return;
+  const note = makeNote(NM.s, NM.sel, NM.el, NM.text || '(no text)', NM.kind);
+  $('nmSave').disabled = true;
+  if (await saveNote(note)) { toast('Note '+note.n+' saved'); closeNM(); }
+  else $('nmSave').disabled = false;
+}
+function closeNM(){ NM = null; $('nmode').classList.remove('open'); $('nmode').innerHTML=''; }
+
+// ---------- export for Claude ----------
+let XSEL = null;
+const nid = n => 'N-'+String(n.n).padStart(3,'0');
+function header(){
+  const d = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  return 'Atlas notes · note format v1 · '+d+'\nSource: atlas · App: '+A.app.name+' · Scan: '+A.scan.id+' · Kit '+KIT_VERSION+'\n';
+}
+function noteMd(n){
+  const s = byId[noteScreen(n)] || {}, e = n.element, id = nid(n), sc = (n.from&&n.from.scan)||{}, vp = (n.scan&&n.scan.viewport)||A.scan.viewport;
+  return '## '+id+' · '+(n.sid?n.sid+' · ':'')+(n.screenTitle||n.screen)+' · '+n.text.split('\n')[0].slice(0,70)+'\n'+
+    '- Status: '+(NOTE_STATUS[n.status]||n.status)+(n.kind?' · Kind: '+n.kind:'')+'\n'+
+    '- Screen: '+(n.screenTitle||n.screen)+(n.sid?' ('+n.sid+')':'')+' · '+(s.kind||'?')+', '+(n.area||s.area||'')+' · the scan opens it with `'+(n.how||s.how||'')+'`\n'+
+    '- Capture: '+n.app+' '+(sc.version||'')+' · '+(sc.commit||'')+' · '+vp.w+'×'+vp.h+' · scan '+(sc.id||'')+'\n'+
+    '- Marked area: '+n.px.x+', '+n.px.y+' · '+n.px.w+'×'+n.px.h+' pt'+(n.part?' · part `'+n.part+'`':'')+' → crops/'+id+'.png\n'+
+    (e?'- Element: `'+e.tag+(e.cls?'.'+e.cls.replace(/ /g,'.'):'')+'`'+(e.a?' (data-a="'+e.a+'")':'')+' “'+e.text+'”\n  - path: `'+e.path+'`\n  - font '+e.style.font+' · line height '+e.style.lh+' · colour '+e.style.color+' · background '+e.style.bg+' · padding '+e.style.pad+' · radius '+e.style.radius+'\n':'- Element: none picked (a drawn box)\n')+
+    (n.docs&&n.docs.length?'- Explained in: '+n.docs.join('; ')+'\n':'')+
+    '- Errors on the screen at capture: '+(n.errors||0)+'\n'+
+    '- Note: '+n.text+'\n';
+}
+function reportMd(list){
+  const noId = (A.ids&&A.ids.noId)||[];
+  return header()+'\n# Atlas notes for Claude\n\nFrom the Atlas of '+A.app.name+', '+new Date().toLocaleString('en-GB')+'. '+list.length+' note'+(list.length>1?'s':'')+'. Screenshots come from a scan with '+(A.scan.data||'sample data')+', not live.\n\n'+
+    list.map(noteMd).join('\n')+
+    (noId.length?'\n## Screens with no ID yet\n'+noId.map(x=>'- '+x.title+': suggested '+x.suggested+' (a suggestion; the register changes in an app build)').join('\n')+'\n':'');
+}
+function queueMd(list){
+  const q = A.app.queue;
+  return (q?'Please add these to '+q.file+(q.section?' › '+q.section:'')+', each with a priority checked against the app’s purpose:':'Please add these to '+A.app.name+'’s list of ideas, each with a priority checked against the app’s purpose:')+'\n\n'+
+    list.map(n=>'- **'+n.text.split('\n')[0].slice(0,60)+'** (Atlas '+nid(n)+', '+(n.sid?n.sid+' ':'')+(n.screenTitle||n.screen)+(n.kind?', '+n.kind:'')+'): '+n.text).join('\n');
+}
+function openExport(){
+  XSEL = XSEL || new Set(NOTES.filter(n=>n.status==='open'||n.status==='looking').map(n=>n.id));
+  $('xbg').classList.add('open'); renderExport();
+}
+function renderExport(){
+  const list = NOTES.filter(n=>XSEL.has(n.id));
+  $('xsheet').innerHTML = '<div class="dtop" style="position:static"><div class="dtitle"><strong>Export for Claude</strong><span>'+list.length+' of '+NOTES.length+' notes picked</span></div><button class="ib" style="margin-left:auto" id="xclose" aria-label="Close">✕</button></div>'+
+    '<div style="display:flex;flex-wrap:wrap">'+
+      '<div style="flex:1 1 340px;padding:14px;display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow:auto;border-right:1px solid var(--line)">'+
+        '<div class="hint"><b>Easiest:</b> in any Claude chat, say <b>“check my notes”</b>. Claude reads them straight from this page, with each note’s screen, marked area and element details, plus the notes on any prototypes listed here. Use the buttons below to hand them over another way.</div>'+
+        NOTES.map(n=>'<label class="nrow" style="align-items:center;cursor:pointer"><input type="checkbox" data-xs="'+esc(n.id)+'" '+(XSEL.has(n.id)?'checked':'')+' style="width:18px;height:18px;accent-color:#2f6feb"><span class="t"><b>'+nid(n)+' · '+esc(n.screenTitle||n.screen)+'</b><span class="note">'+esc(n.text)+'</span></span><span class="tag '+n.status+'">'+esc(NOTE_STATUS[n.status])+'</span></label>').join('')+
+      '</div>'+
+      '<div style="flex:1 1 420px;padding:14px;display:flex;flex-direction:column;gap:8px;background:#18181b"><span class="h" style="padding:0">Preview · report.md</span><pre id="xpre">'+esc(list.length?reportMd(list):'Pick at least one note.')+'</pre></div>'+
+    '</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 14px;border-top:1px solid var(--line)">'+
+      '<label class="toggle" style="padding:0"><input type="checkbox" id="xlook"> Mark these “Looking into it”</label>'+
+      '<span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="xqueue" '+(list.length?'':'disabled')+'>Copy as queue ideas</button><button class="btn" id="xcopy" '+(list.length?'':'disabled')+'>Copy report</button><button class="btn pri" id="xzip" '+(list.length?'':'disabled')+'>Download (.zip)</button></span>'+
+      '<p class="note" style="flex-basis:100%;margin:0">The .zip holds report.md, notes.json and a picture of each marked area. “Copy as queue ideas” gives a message to paste to Claude, who adds them to the app’s ideas list as text only (pictures stay private).</p>'+
+    '</div>';
+}
+async function afterHandOff(list){ if ($('xlook') && $('xlook').checked) for (const n of list) if (n.status==='open') await setNoteStatus(n.id, 'looking'); }
+async function copyText(t, what){ try { await navigator.clipboard.writeText(t); toast(what+' copied'); return true; } catch(e) { toast('Couldn’t copy here. Select the preview and copy it instead.'); return false; } }
+function loadZip(){ return window.JSZip ? Promise.resolve(window.JSZip) : new Promise((ok, no) => { const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'; s.onload=()=>ok(window.JSZip); s.onerror=()=>no(new Error('JSZip didn’t load')); document.head.appendChild(s); }); }
+function crop(n){
+  const s = byId[noteScreen(n)], src = s && s.shot || n.shot;
+  return new Promise(res => { const img = new Image(); img.onload = () => {
+    const vw = (n.scan&&n.scan.viewport)||A.scan.viewport, sx = img.naturalWidth / vw.w, pad = 12;
+    const x = Math.max(0, (n.px.x-pad)*sx), y = Math.max(0, (n.px.y-pad)*sx), w = Math.min(img.naturalWidth-x, (n.px.w+pad*2)*sx), h = Math.min(img.naturalHeight-y, (n.px.h+pad*2)*sx);
+    const c = document.createElement('canvas'); c.width = Math.round(w); c.height = Math.round(h);
+    const g = c.getContext('2d'); g.drawImage(img, x, y, w, h, 0, 0, w, h);
+    g.strokeStyle = '#2f6feb'; g.lineWidth = 3*sx/2; g.strokeRect((n.px.x*sx)-x, (n.px.y*sx)-y, n.px.w*sx, n.px.h*sx);
+    c.toBlob(b => res(b), 'image/png'); }; img.onerror = () => res(null); img.src = src; });
+}
+async function downloadZip(list){
+  let dl = null; try { dl = await claude.use('downloads'); } catch(e) {}
+  if (!dl) { toast('Downloads work when the page is open on claude.ai'); return; }
+  try {
+    const Z = await loadZip(), z = new Z();
+    z.file('report.md', reportMd(list)); z.file('notes.json', JSON.stringify(list, null, 1));
+    for (const n of list) { const b = await crop(n); if (b) z.file('crops/'+nid(n)+'.png', b); }
+    const blob = await z.generateAsync({type:'blob'});
+    await dl.save({filename:'atlas-notes-'+new Date().toISOString().slice(0,10)+'.zip', data:blob});
+    toast('Saved'); await afterHandOff(list);
+  } catch(e) { if (e && e.code==='declined') toast('Download cancelled'); else toast('Couldn’t make the download ('+((e&&(e.code||e.message))||'error')+')'); }
+}
+async function listPrototype(s){
+  const link = $('plink').value.trim(), title = $('ptitle').value.trim();
+  if (!DB) { toast('Listing a prototype needs the page open on claude.ai'); return; }
+  const m = link.match(/artifact\/([\w-]+)/), now = new Date().toISOString();
+  const id = 'p-'+Date.now().toString(36);
+  try { await DB.collection('proposed').doc(id).set({screen:s.id, sid:s.sid||null, screenTitle:s.title, title:title||'A prototype', url:link, slug:m?m[1]:null, added:now}); S.listing = null; toast('Listed. It shows beside this screen after the next rescan.'); renderDet(); }
+  catch(e) { toast('Couldn’t list it ('+(e&&e.code)+')'); }
+}
+
+// ---------- map ----------
+let MV = {x:30, y:30, k:.62};
+let drag = null;
+function autoLayout(){
+  // areas as regions in rows of three; cards in rows of up to 5 inside each region
+  const pos = {}, regions = [], CW = 96, CH = 236, GX = 26, GY = 30, PAD = 46;
+  const onMap = s => s.status==='captured' || s.status==='failed' || s.status==='gone';
+  const areas = AREAS.filter(a => A.screens.some(s=>s.area===a && onMap(s)));
+  let x0 = 0, y0 = 0, rowH = 0, col = 0;
+  for (const a of areas) {
+    const list = A.screens.filter(s => s.area===a && onMap(s));
+    const per = Math.min(5, list.length), rows = Math.ceil(list.length / per);
+    const w = PAD*2 - 20 + per*CW + (per-1)*GX, h = PAD + 18 + rows*CH + (rows-1)*GY + 16;
+    list.forEach((s,i) => pos[s.id] = {x: x0 + PAD - 10 + (i%per)*(CW+GX), y: y0 + PAD + 14 + Math.floor(i/per)*(CH+GY)});
+    regions.push({name:a, x:x0, y:y0, w, h});
+    rowH = Math.max(rowH, h); x0 += w + 60; col++;
+    if (col === 3) { col = 0; x0 = 0; y0 += rowH + 60; rowH = 0; }
+  }
+  return {pos, regions};
+}
+function edges(){
+  const out = new Map();
+  for (const s of A.screens) for (const l of s.links||[]) {
+    if (l.how!=='seen' || !l.to || l.to===s.id || !byId[l.to] || hidden(byId[l.to])) continue;
+    const kind = l.kind || 'Button', key = s.id+'>'+l.to;
+    if (!out.has(key)) out.set(key, {from:s.id, to:l.to, kind, labels:[], actions:[]});
+    const e = out.get(key); if (!e.labels.includes(l.label)) e.labels.push(l.label); if (!e.actions.includes(l.action)) e.actions.push(l.action);
+    if (kind!=='Tab bar' && e.kind==='Tab bar') e.kind = kind;
+  }
+  for (const d of A.doors||[]) if (d.from && d.to && byId[d.from] && byId[d.to]) out.set('door:'+d.from+'>'+d.to+':'+d.how, {from:d.from, to:d.to, kind:DOOR, doorKind:d.kind, labels:[d.how||d.label], actions:[]});
+  return [...out.values()];
+}
+function renderMap(){
+  const L = autoLayout(), P = Object.assign({}, L.pos);
+  for (const [id,p] of Object.entries(LAYOUT.pos||{})) if (P[id]) P[id] = p;
+  const vis = new Set(visible().map(s=>s.id));
+  const E = edges().filter(e => S.mapKinds[e.kind] && P[e.from] && P[e.to]);
+  const W = 3600, H = 2600;
+  const ctr = (id, side) => { const p = P[id]; return {x: p.x + (side==='l'?0:side==='r'?96:48), y: p.y + 104}; };
+  const pts = e => { const a = P[e.from], b = P[e.to]; const dir = b.x > a.x + 40 ? 1 : b.x < a.x - 40 ? -1 : 0;
+    const s = dir>=0 ? ctr(e.from,'r') : ctr(e.from,'l'), t = dir>=0 ? ctr(e.to,'l') : ctr(e.to,'r');
+    if (dir===0) { s.x = a.x+96; t.x = b.x+96; const bend = 70; return [s, {x:s.x+bend,y:s.y}, {x:t.x+bend,y:t.y}, t]; }
+    const dx = Math.max(60, Math.abs(t.x-s.x)/2); return [s, {x:s.x+dir*dx,y:s.y}, {x:t.x-dir*dx,y:t.y}, t]; };
+  const path = e => { const [a,b,c,d] = pts(e); return 'M'+a.x+' '+a.y+' C'+b.x+' '+b.y+' '+c.x+' '+c.y+' '+d.x+' '+d.y; };
+  const mid = e => { const [a,b,c,d] = pts(e); return {x:(a.x+3*b.x+3*c.x+d.x)/8, y:(a.y+3*b.y+3*c.y+d.y)/8}; };
+  const sel = S.open, hot = e => S.edge && S.edge.from===e.from && S.edge.to===e.to && S.edge.kind===e.kind;
+  const cls = e => 'edge '+(e.kind===DOOR?'door':e.kind==='Opens a sheet'?'sheet':e.kind==='Back'?'back':e.kind==='Tab bar'?'tab':'')+(hot(e)||(sel&&(e.from===sel||e.to===sel))?' on':'')+(sel&&!(e.from===sel||e.to===sel)&&!hot(e)?' dim':'');
+  const moved = Object.keys(LAYOUT.pos||{}).length;
+  const short = t => t.length > 26 ? t.slice(0,25)+'…' : t;
+  const labs = S.mapLabels ? E.map(e => { const m = mid(e); const t = e.labels.length>1 ? short(e.labels[0])+' +'+(e.labels.length-1) : short(e.labels[0]||'');
+      return '<span class="elabel'+(e.kind===DOOR?' door':e.kind==='Opens a sheet'?' sheet':'')+'" style="left:'+Math.round(m.x)+'px;top:'+Math.round(m.y)+'px" title="'+esc(e.labels.join(' · '))+'">'+esc(t)+'</span>'; }).join('') : '';
+  $('map').innerHTML =
+    '<div class="mapin" id="mapin" style="width:'+W+'px;height:'+H+'px;transform:translate('+MV.x+'px,'+MV.y+'px) scale('+MV.k+')">'+
+      L.regions.map(r=>'<div class="region" style="left:'+r.x+'px;top:'+r.y+'px;width:'+r.w+'px;height:'+r.h+'px"><span>'+esc(r.name)+'</span></div>').join('')+
+      '<svg class="lines" width="'+W+'" height="'+H+'" style="position:absolute;left:0;top:0;overflow:visible" aria-hidden="true"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8e8e96"/></marker></defs>'+
+        E.map(e=>'<path class="'+cls(e)+'" d="'+path(e)+'" marker-end="url(#ah)"/>').join('')+
+        E.map((e,i)=>'<path class="hit" data-edge="'+i+'" d="'+path(e)+'"><title>'+esc(byId[e.from].title+' → '+byId[e.to].title+' · '+e.labels[0]+(e.kind===DOOR?' ('+DOOR+')':''))+'</title></path>').join('')+
+      '</svg>'+
+      A.screens.filter(s=>P[s.id]).map(s=>'<button class="mcard'+(vis.has(s.id)?'':' dim')+'" data-mid="'+esc(s.id)+'" aria-current="'+(sel===s.id)+'" style="left:'+P[s.id].x+'px;top:'+P[s.id].y+'px" aria-label="'+esc(s.title)+'">'+thumb(s)+(s.sid?'<span class="sid">'+esc(s.sid)+'</span>':'')+'<b>'+esc(s.title)+'</b>'+(tagOf(s)?'<span class="badge '+(tagOf(s)==='new'?'tnew':'tch')+'" style="align-self:flex-start">'+(tagOf(s)==='new'?'NEW':'CHANGED')+'</span>':s.change&&CHANGE[s.change.kind]?'<span class="badge '+CHANGE[s.change.kind][1]+'" style="align-self:flex-start">'+CHANGE[s.change.kind][0]+'</span>':'')+'</button>').join('')+
+      labs+
+      (LAYOUT.labels||[]).map((l,i)=>'<div class="mlabel" data-lab="'+i+'" style="left:'+l.x+'px;top:'+l.y+'px"><span class="grip" data-lgrip="'+i+'" aria-label="Move label"></span><div contenteditable="true" data-ltext="'+i+'" role="textbox" aria-label="Label text">'+esc(l.text)+'</div></div>').join('')+
+    '</div>'+
+    '<div class="mtools" style="left:12px;top:12px;flex-wrap:wrap;max-width:calc(100% - 24px)"><span class="note" style="margin-right:4px">Show</span>'+
+      ['Button','Opens a sheet','Back','Tab bar',DOOR].map(k=>'<button class="chip" data-mk="'+esc(k)+'" aria-pressed="'+!!S.mapKinds[k]+'">'+esc(k)+'</button>').join('')+
+      '<span style="width:1px;height:20px;background:var(--line2);margin:0 4px"></span><button class="chip" id="mapLabels" aria-pressed="'+S.mapLabels+'" title="Show what’s tapped on every line">Labels</button><button class="btn sm" id="addLabel">+ Note label</button>'+
+      '<button class="btn sm" id="resetLayout" '+(moved||(LAYOUT.labels||[]).length?'':'disabled')+'>'+(S.confirmReset?'Sure? Reset':'Tidy layout')+'</button></div>'+
+    '<div class="mtools legend" style="left:12px;bottom:12px;flex-wrap:wrap"><span><i></i>Button</span><span><i style="border-color:var(--teal)"></i>Opens a sheet</span><span><i style="border-top-style:dashed"></i>Back</span><span><i style="border-color:#4a4a52"></i>Tab bar</span><span><i class="door"></i>'+DOOR+'</span></div>'+
+    '<div class="mtools" style="right:12px;bottom:12px"><button class="ib" id="zout" aria-label="Zoom out">−</button><span id="zpct" style="min-width:40px;text-align:center">'+Math.round(MV.k*100)+'%</span><button class="ib" id="zin" aria-label="Zoom in">+</button><button class="btn sm" id="zfit">Fit all</button></div>';
+}
+function applyMV(){ const m = $('mapin'); if (m) m.style.transform = 'translate('+MV.x+'px,'+MV.y+'px) scale('+MV.k+')'; const z = $('zpct'); if (z) z.textContent = Math.round(MV.k*100)+'%'; store.set('mapview', MV); }
+function zoomAt(f, cx, cy){ const k = Math.max(.2, Math.min(2, MV.k*f)); MV.x = cx - (cx-MV.x)*k/MV.k; MV.y = cy - (cy-MV.y)*k/MV.k; MV.k = k; applyMV(); }
+function fitMap(){ const L = autoLayout(), P = Object.assign({}, L.pos, LAYOUT.pos||{}); const ps = Object.values(P); if (!ps.length) return;
+  const x1 = Math.min(...ps.map(p=>p.x))-60, y1 = Math.min(...ps.map(p=>p.y))-60, x2 = Math.max(...ps.map(p=>p.x))+160, y2 = Math.max(...ps.map(p=>p.y))+300;
+  const r = $('map').getBoundingClientRect(); MV.k = Math.max(.2, Math.min(1, Math.min(r.width/(x2-x1), (r.height-60)/(y2-y1)))); const top = (document.querySelector('#map .mtools')||{offsetHeight:40}).offsetHeight + 24;
+  MV.k = Math.max(.2, Math.min(1, Math.min(r.width/(x2-x1), (r.height-top-60)/(y2-y1)))); MV.x = -x1*MV.k + (r.width-(x2-x1)*MV.k)/2; MV.y = -y1*MV.k + top; applyMV(); }
+function wireMap(){
+  const m = $('map');
+  m.addEventListener('wheel', e => { e.preventDefault(); const r = m.getBoundingClientRect();
+    if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-e.deltaY*0.01), e.clientX-r.left, e.clientY-r.top); else { MV.x -= e.deltaX; MV.y -= e.deltaY; applyMV(); } }, {passive:false});
+  m.addEventListener('pointerdown', e => {
+    if (e.target.closest('.mtools,[contenteditable]')) return;
+    const card = e.target.closest('.mcard'), grip = e.target.closest('[data-lgrip]');
+    if (card || grip) {
+      const id = card ? card.dataset.mid : null, li = grip ? +grip.dataset.lgrip : null;
+      const L = autoLayout(); const start = id ? (LAYOUT.pos[id] || L.pos[id]) : LAYOUT.labels[li];
+      drag = {id, li, sx:e.clientX, sy:e.clientY, ox:start.x, oy:start.y, moved:false, el: card || grip.parentElement};
+      m.setPointerCapture(e.pointerId); e.preventDefault(); return;
+    }
+    if (e.target.closest('.hit')) return;
+    drag = {pan:true, sx:e.clientX, sy:e.clientY, ox:MV.x, oy:MV.y, moved:false}; m.classList.add('panning'); m.setPointerCapture(e.pointerId);
+  });
+  m.addEventListener('pointermove', e => {
+    if (!drag) return; const dx = e.clientX-drag.sx, dy = e.clientY-drag.sy;
+    if (Math.abs(dx)+Math.abs(dy) > 4) drag.moved = true;
+    if (drag.pan) { MV.x = drag.ox+dx; MV.y = drag.oy+dy; applyMV(); return; }
+    if (!drag.moved) return;
+    const nx = Math.round(drag.ox + dx/MV.k), ny = Math.round(drag.oy + dy/MV.k);
+    drag.el.style.left = nx+'px'; drag.el.style.top = ny+'px'; drag.nx = nx; drag.ny = ny;
+  });
+  m.addEventListener('pointerup', e => {
+    const d = drag; drag = null; m.classList.remove('panning'); if (!d) return;
+    if (d.pan) { if (!d.moved) { const h = document.elementFromPoint(e.clientX, e.clientY); const hit = h && h.closest && h.closest('.hit'); if (hit) pickEdge(+hit.dataset.edge); else if (S.edge || S.open) { S.edge = null; S.open = null; renderDet(); renderMap(); } } return; }
+    if (!d.moved) { if (d.id) { S.edge = null; S.open = d.id; S.sel = d.id; renderDet(); renderMap(); } return; }
+    if (d.id) LAYOUT.pos[d.id] = {x:d.nx, y:d.ny}; else LAYOUT.labels[d.li] = Object.assign({}, LAYOUT.labels[d.li], {x:d.nx, y:d.ny});
+    saveLayout(); renderMap();
+  });
+  m.addEventListener('focusout', e => { const t = e.target.closest && e.target.closest('[data-ltext]'); if (!t) return; const i = +t.dataset.ltext, v = t.textContent.trim();
+    if (!LAYOUT.labels[i]) return; if (!v) LAYOUT.labels.splice(i,1); else if (v===LAYOUT.labels[i].text) return; else LAYOUT.labels[i] = Object.assign({}, LAYOUT.labels[i], {text:v}); saveLayout(); renderMap(); });
+}
+function pickEdge(i){ const L = autoLayout(), P = Object.assign({}, L.pos, LAYOUT.pos||{}); const E = edges().filter(e => S.mapKinds[e.kind] && P[e.from] && P[e.to]); S.edge = E[i] || null; S.open = null; renderDet(); renderMap(); }
+
+// ---------- flows: walk-throughs, step by step ----------
+function renderFlows(){
+  const F = (A.flows||[]).filter(f => !S.q || (f.id+' '+f.title+' '+f.steps.map(x=>(byId[x.screen]||{}).title+' '+x.moment+' '+(x.label||'')).join(' ')).toLowerCase().includes(S.q.trim().toLowerCase()));
+  const el = $('flows');
+  if (!(A.flows||[]).length) { el.innerHTML = '<div class="empty">No flows yet. An app’s settings can name walk-throughs (FLOWS): the scan captures every step and they show here. README › Flows.</div>'; return; }
+  let f = F.find(x=>x.id===S.flow) || F[0];
+  if (!f) { el.innerHTML = '<div class="empty">No flows match. <button class="more" id="clearf">Clear search</button></div>'; return; }
+  S.flow = f.id; S.step = Math.max(0, Math.min(f.steps.length-1, S.step||0));
+  const st = f.steps[S.step], s = byId[st.screen], vp = A.scan.viewport, nx = f.steps[S.step+1];
+  const ring = st.next ? '<span class="ring" style="'+boxStyle([st.next.x/vp.w, st.next.y/vp.h, st.next.w/vp.w, st.next.h/vp.h])+'"></span>' : '';
+  el.innerHTML =
+    '<div class="flist" role="group" aria-label="Flows">'+F.map(x=>'<button class="fbtn" data-flow="'+esc(x.id)+'" aria-pressed="'+(x.id===f.id)+'"><b>'+esc(x.id)+' · '+esc(x.title)+'</b><span>'+x.steps.length+' steps'+(x.status!=='captured'?' · ▲ stopped early':'')+'</span></button>').join('')+'</div>'+
+    (f.status!=='captured'?'<div class="ferr">'+esc(f.why||'This flow didn’t finish.')+' The steps before it are shown.</div>':'')+
+    (f.caption?'<p class="dcap">'+esc(f.caption)+'</p>':'')+
+    '<div class="fstage"><div class="fshot"><img src="'+esc(st.shot)+'" alt="'+esc('Step '+st.n+' of '+f.title)+'">'+ring+'</div>'+
+      '<div class="finfo"><span class="step">Step '+st.n+' of '+(f.steps.length-1)+(st.moment?' · '+esc(st.moment):'')+'</span>'+
+        '<h2>'+(s?esc(s.title):esc(st.title||'A screen not in this scan'))+'</h2>'+
+        (s&&s.sid?'<span class="sid">'+esc(s.sid)+'</span>':'')+
+        (st.caption?'<p class="dcap">'+esc(st.caption)+'</p>':s&&s.caption?'<p class="dcap">'+esc(s.caption)+'</p>':'')+
+        (st.label&&S.step>0?'<p class="note" style="margin:0">Got here by: '+esc(st.label)+'</p>':'')+
+        (nx?'<span class="tap">Next: '+esc(nx.label||'next step')+'</span>':'<span class="note">End of the flow.</span>')+
+        '<div class="fnav"><button class="btn" data-fgo="-1" '+(S.step<=0?'disabled':'')+'>‹ Back</button><button class="btn pri" data-fgo="1" '+(!nx?'disabled':'')+'>Next ›</button>'+
+        (s?'<button class="btn" data-lb="'+esc(s.id)+'">Open in the Lightbox</button>':'')+'</div>'+
+        '<p class="note" style="margin:0">Saved screenshots from the scan of '+esc(A.scan.version)+', not live. ← → step through.</p></div></div>'+
+    '<div class="strip" aria-label="Steps">'+f.steps.map((x,i)=>(i?'<span class="arrow">'+esc(x.label||'')+'</span>':'')+
+      '<button class="sth" data-fstep="'+i+'" data-flow="'+esc(f.id)+'" aria-current="'+(i===S.step)+'" aria-label="Step '+x.n+'"><div class="th"><img loading="lazy" src="'+esc(x.shot)+'" alt=""></div><small>'+x.n+(x.moment?' · '+esc(x.moment):'')+'<br>'+esc((byId[x.screen]||{}).title||x.title||'')+'</small></button>').join('')+'</div>';
+}
+
+// ---------- render ----------
+function setView(v){
+  if (v==='flows' && !(A.flows||[]).length && S.view!=='flows') v = v;
+  S.view = v; save();
+  document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.view===v));
+  $('main').hidden = v!=='lightbox'; $('map').hidden = v!=='map'; $('flows').hidden = v!=='flows';
+  $('keys').textContent = v==='map' ? 'Drag to move around · Ctrl/⌘ + scroll to zoom · drag a card to place it · click a line for its details' : v==='flows' ? '← → step through · Esc close' : '/ search · arrows move · Enter open · Esc close · F full length · N note';
+  if (v==='map') { renderMap(); if (!store.get('mapview', null)) setTimeout(fitMap, 30); } else if (v==='flows') renderFlows(); else renderMain();
+}
+function renderView(){ if (S.view==='map') renderMap(); else if (S.view==='flows') renderFlows(); else renderMain(); }
+function refreshAll(){ renderNotesBtn(); renderSide(); if (S.view==='map') { if (!drag && !(document.activeElement && document.activeElement.isContentEditable)) renderMap(); } else renderView(); if (!S.edge && !(document.activeElement && document.activeElement.closest && document.activeElement.closest('#pform'))) renderDet(); renderDrawer(); if ($('xbg').classList.contains('open')) renderExport(); }
+function render(){ renderSide(); renderView(); renderDet(); renderDrawer(); save(); }
+
+function openFull(){
+  const s = byId[S.open]; if (!s || s.status!=='captured') return;
+  $('fimg').src = s.full; $('fimg').alt = s.title+' full length'; $('ftitle').textContent = s.title;
+  $('fsub').textContent = 'Full length · saved '+fmtWhen(A.scan.at); $('full').classList.add('open'); $('fclose').focus();
+}
+function select(id, open){
+  S.sel = id; S.edge = null; if (open) S.open = id;
+  if (id) { try { history.replaceState(null,'','#s-'+id) } catch(e) {} }
+  renderView(); renderDet();
+  const c = document.querySelector('.card[data-id="'+CSS.escape(id)+'"]'); if (c) { c.focus({preventScroll:true}); c.scrollIntoView({block:'nearest'}); }
+}
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('button,[data-id]'); if (!t) { if (!e.target.closest('.pop,#rescan')) $('pop').classList.remove('open'); return; }
+  if (t.id==='rescan') { $('pop').classList.toggle('open'); return; }
+  if (t.dataset.view) { setView(t.dataset.view); return; }
+  if (t.dataset.only) { S.onlyChanged = !S.onlyChanged; render(); return; }
+  if (t.dataset.so) { S.sinceOnly = S.sinceOnly===t.dataset.so ? '' : t.dataset.so; render(); return; }
+  if (t.id==='sinceOff') { S.since = ''; S.sinceOnly = ''; render(); return; }
+  if (t.dataset.f) { const f=t.dataset.f, v=t.dataset.v||null; if (f==='area'&&!v) {S.area=null;S.status=null;S.onlyChanged=false;S.sinceOnly='';} else S[f] = S[f]===v ? null : v; if (f==='status'&&(v==='uncaptured'||v==='notfound')) S.showCode=true; render(); return; }
+  if (t.dataset.g) { S.group = t.dataset.g; render(); return; }
+  if (t.classList.contains('card')) { select(t.dataset.id, true); return; }
+  if (t.dataset.lb) { setView('lightbox'); select(t.dataset.lb, true); return; }
+  if (t.dataset.flow) { S.flow = t.dataset.flow; S.step = t.dataset.fstep ? +t.dataset.fstep : 0; if (S.view!=='flows') setView('flows'); else renderFlows(); save(); return; }
+  if (t.dataset.fgo) { S.step += +t.dataset.fgo; renderFlows(); return; }
+  if (t.dataset.go) { if (S.view==='map') { S.edge=null; S.open=t.dataset.go; S.sel=t.dataset.go; renderDet(); renderMap(); } else { if (S.view==='flows') setView('lightbox'); select(t.dataset.go, true); } $('det').scrollTop = 0; return; }
+  if (t.dataset.step) { const l=visible(), i=l.findIndex(x=>x.id===S.open)+(+t.dataset.step); if (l[i]) select(l[i].id, true); return; }
+  if (t.dataset.t) { S[t.dataset.t] = !S[t.dataset.t]; renderDet(); save(); return; }
+  if (t.id==='dclose') { S.open=null; S.edge=null; renderDet(); if (S.view==='map') renderMap(); try{history.replaceState(null,'',location.pathname)}catch(e){}; return; }
+  if (t.id==='dfull'||t.id==='dfull2') { openFull(); return; }
+  if (t.id==='fclose') { $('full').classList.remove('open'); return; }
+  if (t.id==='clearf') { Object.assign(S,{area:null,status:null,kind:null,q:'',onlyChanged:false,sinceOnly:''}); $('q').value=''; render(); return; }
+  if (t.id==='addNote') { openNote(S.open); return; }
+  if (t.id==='plist') { S.listing = S.open; renderDet(); const i = $('plink'); if (i) i.focus(); return; }
+  if (t.id==='pcancel') { S.listing = null; renderDet(); return; }
+  if (t.id==='notesBtn') { S.drawer = !S.drawer; renderDrawer(); return; }
+  if (t.id==='nclose') { S.drawer = false; renderDrawer(); return; }
+  if (t.dataset.nf) { S.nFilter = t.dataset.nf; renderDrawer(); save(); return; }
+  if (t.dataset.nopen) { const n = NOTES.find(x=>x.id===t.dataset.nopen), id = n && noteScreen(n); if (id && byId[id]) { if (window.innerWidth<=760) { S.drawer=false; renderDrawer(); } if (S.view==='map') { S.open=id; renderDet(); renderMap(); } else { if (S.view==='flows') setView('lightbox'); select(id, true); } } return; }
+  if (t.id==='exportBtn') { openExport(); return; }
+  if (t.id==='xclose') { $('xbg').classList.remove('open'); return; }
+  if (t.id==='xcopy') { const l = NOTES.filter(n=>XSEL.has(n.id)); copyText(reportMd(l), 'Report').then(ok=>ok&&afterHandOff(l)); return; }
+  if (t.id==='xqueue') { const l = NOTES.filter(n=>XSEL.has(n.id)); copyText(queueMd(l), 'Queue ideas').then(ok=>ok&&afterHandOff(l)); return; }
+  if (t.id==='xzip') { downloadZip(NOTES.filter(n=>XSEL.has(n.id))); return; }
+  if (t.id==='nmClose'||t.id==='nmCancel') { closeNM(); return; }
+  if (t.dataset.nmm) { keepText(); NM.mode = t.dataset.nmm; NM.sel = null; NM.el = null; NM.hover = null; renderNM(); return; }
+  if (t.dataset.part) { keepText(); pickPart(NM.idx + (+t.dataset.part)); renderNM(); return; }
+  if (t.dataset.nk) { keepText(); NM.kind = NM.kind===t.dataset.nk ? '' : t.dataset.nk; renderNM(); return; }
+  if (t.dataset.mk) { S.mapKinds[t.dataset.mk] = !S.mapKinds[t.dataset.mk]; save(); renderMap(); return; }
+  if (t.id==='mapLabels') { S.mapLabels = !S.mapLabels; save(); renderMap(); return; }
+  if (t.id==='zin'||t.id==='zout') { const r = $('map').getBoundingClientRect(); zoomAt(t.id==='zin'?1.25:0.8, r.width/2, r.height/2); return; }
+  if (t.id==='zfit') { fitMap(); return; }
+  if (t.id==='addLabel') { const r = $('map').getBoundingClientRect(); LAYOUT.labels.push({id:'l'+Date.now().toString(36), x:Math.round((r.width/2-MV.x)/MV.k), y:Math.round((r.height/2-MV.y)/MV.k), text:'New label'}); saveLayout(); renderMap(); const el = document.querySelector('[data-ltext="'+(LAYOUT.labels.length-1)+'"]'); if (el) { el.focus(); document.execCommand && document.execCommand('selectAll'); } return; }
+  if (t.id==='resetLayout') { if (!S.confirmReset) { S.confirmReset = true; renderMap(); setTimeout(()=>{ if (S.confirmReset) { S.confirmReset=false; if (S.view==='map') renderMap(); } }, 4000); return; } S.confirmReset = false; LAYOUT.pos = {}; LAYOUT.labels = []; saveLayout(); renderMap(); fitMap(); return; }
+});
+document.addEventListener('submit', e => { if (e.target.id==='nform') { e.preventDefault(); submitNote(); } if (e.target.id==='pform') { e.preventDefault(); const s = byId[S.open]; if (s) listPrototype(s); } });
+document.addEventListener('change', e => {
+  if (e.target.id==='showCode') { S.showCode = e.target.checked; if(!S.showCode&&(S.status==='uncaptured'||S.status==='notfound')) S.status=null; render(); }
+  if (e.target.id==='since'||e.target.id==='since2') { S.since = e.target.value; S.sinceOnly = ''; render(); }
+  if (e.target.dataset.nstatus) setNoteStatus(e.target.dataset.nstatus, e.target.value);
+  if (e.target.dataset.xs) { const id = e.target.dataset.xs; if (e.target.checked) XSEL.add(id); else XSEL.delete(id); renderExport(); }
+});
+document.addEventListener('input', e => {
+  if (e.target.dataset.wiper) { const v = e.target.value, w = document.querySelector('[data-wipe="'+CSS.escape(e.target.dataset.wiper)+'"]'); if (!w) return; w.querySelector('.top').style.width = v+'%'; w.querySelector('.bar').style.left = v+'%'; w.querySelector('.top img').style.width = w.clientWidth+'px'; }
+});
+$('q').addEventListener('input', e => { S.q = e.target.value; renderView(); });
+$('size').addEventListener('input', e => { S.size = +e.target.value; document.documentElement.style.setProperty('--thumb', S.size+'px'); save(); });
+document.addEventListener('keydown', e => {
+  const ae = document.activeElement, typing = (/INPUT|TEXTAREA|SELECT/.test(ae.tagName) && !/checkbox|range/.test(ae.type)) || ae.isContentEditable;
+  if (e.key==='Escape') {
+    if (NM) closeNM(); else if ($('xbg').classList.contains('open')) $('xbg').classList.remove('open'); else if ($('full').classList.contains('open')) $('full').classList.remove('open');
+    else if ($('pop').classList.contains('open')) $('pop').classList.remove('open'); else if (typing) ae.blur(); else if (S.drawer) { S.drawer=false; renderDrawer(); }
+    else if (S.open||S.edge) { S.open=null; S.edge=null; renderDet(); if (S.view==='map') renderMap(); else if (S.sel && S.view==='lightbox') select(S.sel,false); }
+    return; }
+  if (NM && e.key==='Enter' && (e.metaKey||e.ctrlKey)) { e.preventDefault(); submitNote(); return; }
+  if (typing || e.metaKey || e.ctrlKey || e.altKey || NM) return;
+  if (e.key==='/') { e.preventDefault(); $('q').focus(); return; }
+  if (S.view==='flows' && (e.key==='ArrowRight'||e.key==='ArrowLeft')) { e.preventDefault(); S.step += e.key==='ArrowRight'?1:-1; renderFlows(); return; }
+  if ((e.key==='f'||e.key==='F') && S.open) { openFull(); return; }
+  if ((e.key==='n'||e.key==='N') && S.open) { e.preventDefault(); openNote(S.open); return; }
+  if (S.view!=='lightbox') return;
+  const l = visible(); if (!l.length) return;
+  let i = l.findIndex(x=>x.id===(S.sel||S.open));
+  if (['ArrowRight','ArrowLeft','ArrowDown','ArrowUp'].includes(e.key)) {
+    e.preventDefault(); let step = 1;
+    if (e.key==='ArrowDown'||e.key==='ArrowUp') { const g=document.querySelector('.grid'); step = g ? getComputedStyle(g).gridTemplateColumns.split(' ').length : 1; }
+    if (e.key==='ArrowLeft'||e.key==='ArrowUp') step = -step;
+    i = i<0 ? 0 : Math.max(0, Math.min(l.length-1, i+step)); select(l[i].id, !!S.open);
+  }
+  if (e.key==='Enter' && S.sel && !S.open && ae.classList.contains('card')) { e.preventDefault(); select(S.sel, true); }
+});
+window.addEventListener('resize', () => { if (NM) { keepText(); renderNM(); } sizeWipes(); });
+
+fetch('atlas.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(data => {
+  A = data; A.flows = A.flows||[]; A.doors = A.doors||[]; A.proposed = A.proposed||[]; ALIAS = A.aliases||{};
+  A.screens.forEach(s => { s.links = s.links||[]; s.errors = s.errors||[]; byId[s.id] = s; });
+  PFX = 'atlas.'+(A.app.name||'app').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.';
+  S = Object.assign({}, DEF, store.get('view', {}), {open:null, edge:null, drawer:false});
+  S.mapKinds = Object.assign({}, DEF.mapKinds, S.mapKinds||{});
+  if (S.since && !(A.scan.baselines||[]).some(b=>b.id===S.since)) { S.since=''; S.sinceOnly=''; }
+  MV = store.get('mapview', MV);
+  AREAS = [...(A.areas||[])]; for (const s of A.screens) if (!AREAS.includes(s.area) && !EXTRA_AREAS.includes(s.area)) AREAS.push(s.area); AREAS.push(...EXTRA_AREAS);
+  document.title = 'Atlas · '+A.app.name;
+  $('appname').textContent = 'Atlas · '+A.app.name;
+  $('appv').textContent = (A.scan.version?A.scan.version+' · ':'')+(A.scan.commit||'').split(' ')[0];
+  $('flowsTab').textContent = 'Flows'+(A.flows.length?' · '+A.flows.length:'');
+  $('stamp').textContent = 'Saved screenshots from '+fmtWhen(A.scan.at)+', not live';
+  $('foot2').textContent = A.screens.filter(s=>s.status==='captured').length+' screens · saved '+fmtWhen(A.scan.at)+', not live';
+  const cap = A.screens.filter(s=>s.status==='captured').length, nb = A.screens.reduce((n,s)=>n+s.links.length,0);
+  const seen = A.screens.reduce((n,s)=>n+s.links.filter(l=>l.how==='seen').length,0);
+  $('foot1').textContent = cap+' captured · '+A.screens.filter(s=>s.status==='failed').length+' failed · '+A.screens.filter(s=>s.status==='uncaptured').length+' found in code only · '+nb+' buttons, '+seen+' seen working · '+A.flows.length+' flows · '+A.scan.viewport.name+' · Atlas kit '+(A.kit||KIT_VERSION);
+  $('size').value = S.size; document.documentElement.style.setProperty('--thumb', S.size+'px');
+  const h = decodeURIComponent(location.hash.replace(/^#s-/, '')), hid = screenOf(h); if (hid) { S.sel = S.open = hid; if (S.view==='flows') S.view='lightbox'; }
+  wireMap(); renderNotesBtn(); render(); setView(S.view);
+  connectDb();
+}).catch(err => { $('main').innerHTML = '<div class="empty">Couldn’t load the scan (atlas.json): '+esc(err.message)+'</div>'; });
+</script>
+</body>
+</html>

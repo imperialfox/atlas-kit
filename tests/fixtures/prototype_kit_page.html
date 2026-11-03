@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>New prototype</title>
+<link rel="stylesheet" href="kit.css">
+<style>
+/* Your app's own look goes here. Keep every rule under #app so it can't touch the kit.
+   The kit gives the screen Apple's base colours as variables (--bg, --surface, --fg, --fg2, --fg3, --sep, --fill, --accent),
+   switches them for Dark, sets --k for Motion (1 normal, 4 slow) and adds these classes to the screen:
+   .dark, .is-iphone / .is-ipad / .is-mac, .motion-reduced. Bring your app's own tokens instead if it has them. */
+#app .page{position:absolute;inset:0;overflow-y:auto;padding:58px 16px 120px;box-sizing:border-box}
+.is-ipad #app .page{padding:96px 40px 60px}
+#app .lt{font-size:34px;font-weight:700;letter-spacing:.01em;margin:0 0 12px}
+#app .empty{font-size:17px;color:var(--fg2);margin:0}
+#app .scrim{position:absolute;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:flex-end}
+#app .sheet{background:var(--surface);width:100%;border-radius:16px 16px 0 0;padding:20px 16px 32px;box-sizing:border-box}
+#app .sheet h2{margin:0 0 12px;font-size:20px}
+#app .fld{height:44px;border-radius:10px;border:1px solid var(--sep);margin-bottom:12px}
+#app .save{height:50px;border-radius:12px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:600}
+</style>
+</head>
+<body>
+<!-- The prototype's screens. Give each part a data-name in plain words ("Save button", "Total"),
+     so the inspector, the Outline and Copy changes can talk about it. -->
+<div id="app">
+  <section class="page" data-name="Page">
+    <h1 class="lt" data-name="Title">Home</h1>
+    <div class="scrim"><div class="sheet" data-name="Sheet"><h2 data-name="Heading">Add an item</h2>
+      <div class="save" data-name="save-button">Save</div><div class="fld" data-name="title-field" style="margin-top:12px"></div></div></div>
+  </section>
+</div>
+
+<script src="kit.js"></script>
+<script>
+  Kit.start({
+    // Name the app and this prototype; they head the Copy changes list. Leave app out and the kit just says "the prototype".
+    app: 'Tidy list',
+    title: 'Add an item, Save first',
+    // A new id for each prototype, so its saved changes, versions and guides stay separate.
+    id: 'tidy-add-item-v1',
+    // Which real screen this changes (its Atlas screen id, if the app has an Atlas), and this prototype's own version.
+    // They go into every note and the Copy changes header, so notes from here and from the Atlas read the same.
+    screen: 'TL-005',
+    version: '1',
+    // The Atlas screenshot of the real screen, copied into this page, for the "Real app" overlay. A file per device, or one for iPhone.
+    // real: { iphone: 'real/today-iphone.png' },
+    // This prototype's own states, as short groups. The kit already has Device, Look, Motion and View.
+    controls: [
+      // { name: 'Signal', options: ['Online', 'Offline'], onChange: i => { /* redraw for state i */ } }
+    ]
+  });
+  // Device, Look, Motion and View changes arrive here, if a screen needs to redraw for them.
+  window.addEventListener('kit:change', e => { /* e.detail: { device, look, motion, inspect, skeleton, custom } */ });
+</script>
+</body>
+</html>
