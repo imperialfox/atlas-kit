@@ -91,7 +91,7 @@ Each kit version gets its own Render and Build here. No Q number: the kit belong
 ## Kit 1.1 · Phone pass
 
 > **Render:** 3 Nov 2026, 11:21, folded into Vocal Sessions Q31 · Atlas: Map and Notes (Ivan: "I'm happy with the current prototype time to fold it into the same q"), after trying the phone prototype (two rounds, the second for smoother zooming, 10:54).
-> **Build:** with Q31's Build: one instruction builds this kit version first, then Q31 copies it. Awaiting Ivan's instruction.
+> **Build:** 3 Nov 2026, 13:36 (Ivan: "Vocal Sessions Q31 Build"), with Q31's Build: this kit version first, then Q31 copies it. Kit 1.1.0 (commit `423e58a`).
 
 **Goal:** the Atlas is easy to use on a phone, and the desktop stays as it is.
 **Start from:** the phone prototype page ("Atlas kit 1.1 · phone prototype", artifact `89c96bf1-915c-4e7e-8bde-3ce5218071ed`): its `index.html` is the prototype viewer. Plan and checks: `claude/atlas_kit_1_1_phone_blueprint.md` in Ivan's project notes.
