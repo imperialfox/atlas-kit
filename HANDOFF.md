@@ -87,3 +87,27 @@ Each kit version gets its own Render and Build here. No Q number: the kit belong
 3. In **Map**, switch **Labels** on: each line shows what's tapped. The purple dotted line is the hand-written "Hold" door.
 4. Pick **Tags since 1.0** (in the filter chips): Stats shows NEW, Home CHANGED.
 5. Open **Add an item**: under "Proposed changes", drag the wipe between Now and Proposed.
+
+## Kit 1.1 · Phone pass
+
+> **Render:** 3 Nov 2026, 11:21, folded into Vocal Sessions Q31 · Atlas: Map and Notes (Ivan: "I'm happy with the current prototype time to fold it into the same q"), after trying the phone prototype (two rounds, the second for smoother zooming, 10:54).
+> **Build:** with Q31's Build: one instruction builds this kit version first, then Q31 copies it. Awaiting Ivan's instruction.
+
+**Goal:** the Atlas is easy to use on a phone, and the desktop stays as it is.
+**Start from:** the phone prototype page ("Atlas kit 1.1 · phone prototype", artifact `89c96bf1-915c-4e7e-8bde-3ce5218071ed`): its `index.html` is the prototype viewer. Plan and checks: `claude/atlas_kit_1_1_phone_blueprint.md` in Ivan's project notes.
+
+**Scope (on a phone; desktop unchanged):**
+1. **Map:** pinch to zoom around your fingers; one finger moves the map; double-tap a screen to zoom to it, double-tap the background to zoom in (or fit when close); one tap opens a screen; hold a card, then drag, to move it. Opens at a readable size on the first area. Options (Show, Labels, Note label, Tidy layout) behind **Map options**; the legend behind **Key**.
+2. **Zoom viewer** for full length, details, before/now, proposed and flow steps: pinch, double-tap, drag; wipes can be zoomed with their slider.
+3. **Notes:** pinch to zoom the screen, tap a part, the form slides up as a bottom sheet; the zoom stays.
+4. **Compact top:** one row (name, search icon, rescan, Notes with count); search opens over the row with Cancel. Banners fold to one line.
+5. **Bottom bar** for Lightbox · Map · Flows.
+6. **Swipes:** details left/right for the next screen, down to close; flows left/right for the next step, with the picture and step side by side and Back · Next · Lightbox always on screen.
+7. **Lightbox grid:** pinch for 2, 3 or 4 columns, remembered on the device.
+8. **Feel:** drawn once per screen refresh; past a zoom or edge limit it gives a little and eases back; a flick glides to rest; double-tap, fit, zoom-to-card and the + / − buttons animate (about 0.3 s) with the point under your finger kept still; the page itself can't zoom under a pinch on iOS; the map's place is saved after moving stops.
+9. Tap targets at least 44 pt; safe areas respected. **Desktop:** unchanged, plus trackpad pinch in the zoom viewer and animated map buttons.
+
+**Defaults:** bottom bar on phones; 3 columns to start; double-tap 2.5×; most zoom 6× on pictures, 5× in note mode, 250 % on the map.
+**Out of scope:** anything in an app; the Prototype kit; compare views.
+**Done when:** the kit's tests gain phone checks (iPhone size with touch: map, zoom viewer and note-mode pinch; swipes; bottom bar; 44 pt controls; give and ease-back at the limits; one draw per frame; no sideways scroll; no errors) and all pass, with the desktop checks unchanged; `CHANGELOG.md` 1.1.0; the demo page republished on 1.1.
+**After the work:** a Debrief here, and up to five checks for Ivan's phone.
