@@ -131,3 +131,32 @@ Each kit version gets its own Render and Build here. No Q number: the kit belong
 3. Tap **Full length**, pinch in past the limit and let go: it eases back. Double-tap to go back out.
 4. **Map:** pinch around a screen, flick the map, double-tap a screen. Hold one, then drag it.
 5. **Add note:** pinch in, tap a small part, write a word, Save. The zoom stays.
+
+## Kit 1.2 · Screen states
+
+> **Render:** 4 Nov 2026, 21:29 ("render for now but delay until app plans to name the buttons first"), for piece A of `claude/atlas_screen_states_blueprint.md` in Ivan's project notes, every *Default if unanswered* taken, with Vocal Sessions Q46 · Atlas: Screen States in the same instruction. **Held** until Vocal Sessions named its buttons: that shipped as Vocal Sessions Q48 in 3.61 (5 Nov 2026).
+> **Build:** 12 Nov 2026, 04:15 (Ivan: "Build atlas kit 1.2.0, here now"), in the chat where he asked what the Atlas kit still needed.
+
+**For:** Claude · **Job:** build · **Builder for this change:** Claude
+**Used by:** Vocal Sessions Q46 · Atlas: Screen States (its own Build, after this).
+**Detailed findings:** plan `claude/atlas_screen_states_blueprint.md` › A; Recon `claude/atlas_capture_recon_2026-11-04.md` (both in Ivan's project notes).
+
+**Goal:** any app's Atlas can name a state for every screen and rescan pictures only, quickly, while the full scan stays as it is.
+
+**Agreed:**
+1. **States by screen ID:** a starting screen can carry `screen='XX-041'`; after its steps the scan reads `data-screen`, and a mismatch is Failed with "opened XX-0xx instead". Starting screens without `screen` work as now.
+2. **Taps by part name:** `('tap', 'XX-001 › some-button')`, or `('tap', '› shared-button')`, turned into the register's selector. Other steps work as now.
+3. **Pictures-only scan** (`--pictures`): every state through its steps, no button tests, no extra passes; links, doors and map lines from the latest full scan, labelled "Buttons last checked <date>"; a screen whose picture changed since then marked "Changed since buttons were checked". `--quick` unchanged.
+4. **Coverage:** a Live register screen with no state and no written reason shows "No state yet" in the viewer (with a filter) and the footer; `coverage(settings)` gives app tests a no-browser check.
+5. **Faster capture:** one page per worker reused for states with the same set-up, put back with the app's `RESET` (a fresh page when there's none); the full-length picture only when the screen is taller than the view; the three-still-frames settle check kept.
+6. **Suggested states:** a full scan writes `suggested_states.py` for screens found by tapping without a state, with taps as part names where named and selectors where not.
+7. **Written reasons:** a screen can be listed with a reason instead of a state, shown as "No state · <reason>", never as missing.
+8. Version 1.2.0 with changelog, README and this handoff (Render, Build, Debrief).
+
+**Out of scope:** per-screen button tests that rerun only what changed, the real iPhone pass, anything app-specific, the WebKit engine.
+
+**Done when:** `tests/test_kit.py` passes with the new checks (states for every made-up screen, a wrong-screen state Failed with the right words, a part-name tap, a missing state flagged, a written reason shown, a pictures-only scan keeping the last full scan's links with its date, reused pages matching fresh pages, `suggested_states.py` with part names); a pictures-only scan of the made-up app is faster than its full scan with the same pictures; "No state yet" shows on the phone layout too.
+
+**For Ivan's phone:** in the kit's demo page, the "Buttons last checked" line, the "No state yet" filter and a Failed state's reason read clearly.
+
+**Risk:** a reused page could carry something over between states; the reused-vs-fresh picture check covers it.
