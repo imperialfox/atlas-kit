@@ -190,3 +190,5 @@ Each kit version gets its own Render and Build here. No Q number: the kit belong
 2. Tap the **No state yet 1** chip at the top: only Item menu shows, marked "No state yet".
 3. Tap **All**, then **▲ Failed 1**, then About: its Status reads "Didn’t open: opened TL-003 instead of TL-004".
 4. Tap Home: under Leads to, the line says the buttons were last checked, and that Home changed since.
+
+**Receipt:** Atlas kit 1.2.0 · Medium → Medium · 92 steps · 99.2k written · 31.4M re-read · 3 full test runs · includes earlier work
