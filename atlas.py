@@ -4,6 +4,7 @@
     python3 atlas.py --settings … --view                             open the last scan again, without scanning
     python3 atlas.py --settings … --no-open                          scan only (what Claude runs before updating an Atlas page)
     python3 atlas.py --settings … --quick                            capture the starting screens without tapping their buttons
+    python3 atlas.py --settings … --pictures                         every state's picture, quickly; buttons from the last full scan
     python3 atlas.py --settings … --workers 4                        how many browsers scan side by side (default: processors, up to 6)
     python3 atlas.py --settings … --proposed proposed.json           also capture prototypes listed against real screens
 
@@ -34,6 +35,16 @@ def scans(folder):
     return sorted(d for d in glob.glob(os.path.join(folder, '*')) if os.path.exists(os.path.join(d, 'atlas.json')))
 
 
+def last_full(found):
+    """The latest full scan (buttons tapped), for a pictures-only scan's links. Scans before 1.2 count when they have links."""
+    for d in reversed(found):
+        try: a = json.load(open(os.path.join(d, 'atlas.json'), encoding='utf-8'))
+        except Exception: continue
+        m = a['scan'].get('mode')
+        if m == 'full' or (m is None and any(s.get('links') for s in a.get('screens', []))): return d
+    return None
+
+
 def put_viewer(folder):
     shutil.copy(os.path.join(HERE, 'viewer.html'), os.path.join(folder, 'index.html'))
 
@@ -57,6 +68,8 @@ def main(argv=None):
     ap.add_argument('--view', action='store_true', help='open the last scan without scanning')
     ap.add_argument('--no-open', action='store_true', help='scan only; don’t start the viewer')
     ap.add_argument('--quick', action='store_true', help='don’t tap buttons (only the starting screens are captured)')
+    ap.add_argument('--pictures', action='store_true', help='every state’s picture, no button tests; links from the latest full scan')
+    ap.add_argument('--fresh-pages', action='store_true', help='a fresh page for every state (no page reuse)')
     ap.add_argument('--workers', type=int, default=min(6, os.cpu_count() or 2))
     ap.add_argument('--only', help='comma-separated starting screens (for checking a few)')
     ap.add_argument('--out', help='where to write this scan (default: a new folder under the data folder)')
@@ -84,7 +97,8 @@ def main(argv=None):
     prev = [d for d in done if os.path.abspath(d) != out]
     print(f'Atlas kit {VERSION} · scanning {app_dir} into {out}')
     engine.scan(a.settings, app_dir, out, workers=a.workers, taps=not a.quick, only=set(a.only.split(',')) if a.only else None,
-                prev=prev[-1] if prev else None, baselines=prev[-a.baselines:] if a.baselines else [], proposed=proposed, scan_id=sid)
+                prev=prev[-1] if prev else None, baselines=prev[-a.baselines:] if a.baselines else [], proposed=proposed, scan_id=sid,
+                pictures=a.pictures, full=last_full(prev) if a.pictures else None, reuse=False if a.fresh_pages else None)
     put_viewer(out)
     if not a.no_open: serve(out)
 

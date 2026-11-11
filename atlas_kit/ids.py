@@ -42,10 +42,29 @@ def normalize(raw):
     for r in raw or []:
         if not isinstance(r, dict) or not r.get('id'): continue
         al = r.get('aliases') or []
-        out.append({'id': str(r['id']), 'name': r.get('name') or r.get('title') or str(r['id']), 'area': r.get('area'),
-                    'kind': r.get('kind'), 'key': r.get('key'), 'aliases': [str(a) for a in (al if isinstance(al, list) else [al])],
-                    'docs': r.get('docs'), 'status': r.get('status') or 'Live', 'parts': r.get('parts') or []})
+        # parts are names, or {name, sel, was} (where the part is inside the screen, and its older names)
+        names, sels, was = [], {}, {}
+        for p in r.get('parts') or []:
+            if isinstance(p, dict):
+                if not p.get('name') or str(p.get('status', '')).lower().startswith('retired'): continue
+                names.append(str(p['name']))
+                if p.get('sel'): sels[str(p['name'])] = str(p['sel'])
+                for o in (p.get('was') or []) if isinstance(p.get('was'), list) else [p.get('was')] if p.get('was') else []:
+                    was[str(o)] = str(p['name'])
+            elif p: names.append(str(p))
+        e = {'id': str(r['id']), 'name': r.get('name') or r.get('title') or str(r['id']), 'area': r.get('area'),
+             'kind': r.get('kind'), 'key': r.get('key'), 'aliases': [str(a) for a in (al if isinstance(al, list) else [al])],
+             'docs': r.get('docs'), 'status': r.get('status') or 'Live', 'parts': names}
+        if sels: e['partSel'] = sels
+        if was: e['partWas'] = was
+        out.append(e)
     return out
+
+
+def part_map(register):
+    """What a part-name tap needs from the register: each screen's part selectors and older part names."""
+    return {r['id']: {'sel': r.get('partSel') or {}, 'was': r.get('partWas') or {}}
+            for r in register or [] if r.get('partSel') or r.get('partWas')}
 
 
 def live(r):
@@ -76,6 +95,8 @@ def apply(st, screens, register, out):
         ids = s.get('ids') or {}
         v = (ids.get('sheet') if ids.get('sheetOpen') else ids.get('screen')) if ids and s['status'] == 'captured' else None
         if v: s['sid'], s['idFrom'] = v, 'screen'
+        elif s.get('screen') and s['status'] != 'captured':   # a state that failed: still listed under the ID it names
+            s['sid'], s['idFrom'] = str(s['screen']), 'state'
         else:
             k = from_key(s)
             if k: s['sid'], s['idFrom'] = k, 'register'
@@ -117,7 +138,9 @@ def apply(st, screens, register, out):
             for a, b in ((s['slug'] + '.jpg', s['id'] + '.jpg'), (s['slug'] + '-full.jpg', s['id'] + '-full.jpg')):
                 pa, pb = os.path.join(out, 'shots', a), os.path.join(out, 'shots', b)
                 if os.path.exists(pa): os.replace(pa, pb)
-            s['shot'] = 'shots/' + s['id'] + '.jpg'; s['full'] = 'shots/' + s['id'] + '-full.jpg'
+            s['shot'] = 'shots/' + s['id'] + '.jpg'
+            # the full length is its own picture only when the screen is taller than the view (1.2)
+            s['full'] = 'shots/' + s['id'] + '-full.jpg' if os.path.exists(os.path.join(out, 'shots', s['id'] + '-full.jpg')) else s['shot']
         for l in s.get('links', []):
             if l.get('to') in ren: l['to'] = ren[l['to']]
         for f in s.get('from', []):

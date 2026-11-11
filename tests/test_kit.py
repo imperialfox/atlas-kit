@@ -1,12 +1,15 @@
 """Tests for the Atlas kit: the scanner, the viewer and "check my notes", on two made-up apps.
 
     python3 tests/test_kit.py                 everything (about 2 minutes)
-    python3 tests/test_kit.py names shared    only some parts: names, shared, site, state, compare, viewer, phone, notes
+    python3 tests/test_kit.py names shared    only some parts: names, shared, site, state, compare, states, viewer, phone, notes
 
 - tests/apps/site: a made-up website (pages with addresses).
 - tests/apps/state: a made-up app of screens without addresses, with screen IDs, a flow, a hand-written door and
   captions; its "version 2" (made in a temporary copy) renames a code key, adds a screen with no ID, lists a screen
   the scan can't find and changes how Home looks.
+- states (1.2): the made-up app with a state for every screen (tests/apps/state/atlas_states.py): part-name taps,
+  states that open the wrong screen, a pictures-only scan against the full scan, reused pages against fresh ones,
+  suggested states, written reasons, coverage() and the viewer's No state yet, Buttons last checked and reasons.
 - phone: the viewer at iPhone 15 Pro size with real touch events (pinch, double-tap, swipes, hold-to-move), plus the
   computer's extras (trackpad pinch, animated map buttons).
 - With the Prototype kit beside this repo (../prototype-kit, or PROTOTYPE_KIT=path), a real Prototype kit page is
@@ -202,6 +205,158 @@ def t_compare(tmp, s1, p1):
     ok((t['about'].get('since') or {}).get(bid) == 'changed' and (t['news'].get('since') or {}).get(bid) == 'new', 'the website: About is CHANGED and the news page NEW')
     ok({l['label']: l for l in t['home']['links']}["What's new"]['how'] == 'seen', 'the link that was broken now works')
     return out
+
+
+# ---------- states by screen ID, pictures-only scans and suggested states (1.2) ----------
+STATES_SETTINGS = os.path.join(STATE, 'atlas_states.py')
+ALL_IDS = ['TL-001', 'TL-002', 'TL-003', 'TL-004', 'TL-005', 'TL-006']
+
+
+def settings_file(tmp, name, body):
+    """A settings file in the temporary folder, built on the made-up app's states settings."""
+    p = os.path.join(tmp, name + '.py')
+    open(p, 'w').write('import sys\nsys.path.insert(0, ' + repr(STATE) + ')\nfrom atlas_states import *\n'
+                       'from atlas_states import load, inventory, keys_of, area_of, kind_of, family\n' + body)
+    return p
+
+
+def t_states(tmp, s1):
+    import time
+    from atlas_kit import coverage
+    from atlas_kit.compare import picture_diff
+    print('States by screen ID, pictures-only scans and suggested states (1.2)')
+    # the first scan, made with the original settings: two screens have no state, and their states are suggested
+    a1 = json.load(open(os.path.join(s1, 'atlas.json')))
+    s = by(a1)
+    ok(a1['scan'].get('mode') == 'full' and a1['states']['missing'] == ['TL-004', 'TL-005'], 'a full scan lists the Live screens with no state: ' + ', '.join(a1['states']['missing']))
+    ok(s['TL-004'].get('stateMissing') and s['TL-005'].get('stateMissing') and not s['TL-001'].get('stateMissing'), 'About and Add an item are flagged “No state yet”; Home isn’t')
+    ns = {}
+    exec(open(os.path.join(s1, 'suggested_states.py'), encoding='utf-8').read(), ns)
+    sug = {x['screen']: x for x in ns.get('SUGGESTED_STATES', [])}
+    ok(set(sug) == {'TL-004', 'TL-005'}, 'suggested_states.py has a draft for each: ' + ', '.join(sorted(sug)))
+    ok(sug.get('TL-004', {}).get('steps', [])[-1:] == [('tap', 'TL-003 › about-row')] and sug.get('TL-005', {}).get('steps') == [('tap', 'TL-001 › add-button')],
+       'its taps are part names (TL-003 › about-row, TL-001 › add-button)')
+
+    # a state for every screen, by part name
+    full = os.path.join(tmp, 'states-full')
+    t0 = time.time(); a = scan(STATES_SETTINGS, STATE, full); tf = time.time() - t0
+    s = by(a)
+    ok(all(s.get(i, {}).get('status') == 'captured' for i in ALL_IDS) and all(x['status'] == 'captured' for x in a['screens'] if x.get('found') == 'Root'),
+       'every screen opens through its state: ' + ', '.join(i for i in ALL_IDS if s.get(i, {}).get('status') == 'captured'))
+    ok(a['states']['missing'] == [] and a['states']['screens'] == 6, 'no screen is missing a state')
+    ok(s['TL-005']['kind'] == 'Sheet' and s['TL-004']['area'] == 'Settings' and s['TL-004']['title'] == 'About', 'a state takes its kind, area and name from the register')
+    ok(s.get('TL-001~first-launch', {}).get('stateOf') == 'TL-001' and s.get('TL-001~dark', {}).get('stateOf') == 'TL-001', 'variants belong to their screen (TL-001 first launch, dark)')
+    f = a['flows'][0] if a['flows'] else {}
+    ok(f.get('status') == 'captured' and [x['screen'] for x in f.get('steps', [])] == ['TL-001', 'TL-005', 'TL-005', 'TL-002'], 'a flow starts at a state and taps by part name')
+    ok(a['scan'].get('suggested', 0) == 0 and 'SUGGESTED_STATES = [\n]' in open(os.path.join(full, 'suggested_states.py')).read(), 'with every screen covered, nothing is suggested')
+    ok(a['scan']['reused'] > 0, f'pages are reused between states with the same set-up ({a["scan"]["reused"]})')
+    ok(not os.path.exists(os.path.join(full, 'shots', 'TL-002-full.jpg')) and s['TL-002']['full'] == s['TL-002']['shot'], 'a screen no taller than the view has no separate full-length picture')
+
+    # states that land somewhere else, or can't tap their way there
+    wrong = settings_file(tmp, 'wrong_states', "ROOTS = [dict(screen='TL-004', steps=[('tap', '› tab-settings')], setup=[]),\n"
+                          "         dict(screen='TL-005', steps=[('tap', 'TL-002 › add-button')], setup=[]),\n"
+                          "         dict(screen='TL-002', steps=[('tap', 'TL-001 › no-such-button')], setup=[])]\nFLOWS = []\n")
+    w = by(scan(wrong, STATE, os.path.join(tmp, 'states-wrong')))
+    ok(w['TL-004']['status'] == 'failed' and 'opened TL-003 instead' in (w['TL-004'].get('why') or ''), 'a state that opens the wrong screen is Failed: “' + str(w['TL-004'].get('why')) + '”')
+    ok('TL-001 is showing, not TL-002' in (w['TL-005'].get('why') or ''), 'a part-name tap on a screen that isn’t showing says which is')
+    ok('no part by that name' in (w['TL-002'].get('why') or ''), 'a part name that isn’t on the screen says so')
+    ok(not any(x['status'] == 'uncaptured' and x.get('sid') in ('TL-004', 'TL-005', 'TL-002') for x in w.values()), 'a failed state isn’t also listed as found in code only')
+
+    # pictures only: every state, no buttons tapped, the full scan's links
+    pics = os.path.join(tmp, 'states-pics')
+    t0 = time.time(); p = scan(STATES_SETTINGS, STATE, pics, pictures=True, full=full, prev=full); tp = time.time() - t0
+    ps = by(p)
+    ok(p['scan']['mode'] == 'pictures' and p['scan'].get('buttons', {}).get('at') == a['scan']['at'], 'a pictures-only scan says when the buttons were last checked (the full scan’s date)')
+    ok(all(len(ps[i]['links']) == len(s[i]['links']) for i in ALL_IDS) and {l['label']: l for l in ps['TL-003']['links']}['About ›'].get('to') == 'TL-004',
+       'it keeps the full scan’s buttons and links for every screen')
+    ok(not any(x.get('buttonsStale') for x in p['screens']) and not any(x.get('change') for x in p['screens']), 'its pictures match the full scan’s (nothing changed, nothing marked)')
+    ok(tp < tf, f'it’s faster than the full scan ({tp:.1f} s against {tf:.1f} s)')
+    fresh = os.path.join(tmp, 'states-fresh')
+    q = scan(STATES_SETTINGS, STATE, fresh, pictures=True, full=full, reuse=False)
+    diff = [x['id'] for x in q['screens'] if x['status'] == 'captured' and picture_diff(os.path.join(fresh, x['shot']), os.path.join(pics, by(p)[x['id']]['shot']))]
+    ok(q['scan']['reused'] == 0 and p['scan']['reused'] > 0 and not diff, 'reused pages give the same pictures as fresh pages' + (': differ ' + ', '.join(diff) if diff else ''))
+
+    # a screen the full scan reached that has no state now keeps the full scan's picture, and is flagged
+    nomenu = settings_file(tmp, 'no_menu_states', "ROOTS = [r for r in ROOTS if r.get('screen') != 'TL-006']\n")
+    m = by(scan(nomenu, STATE, os.path.join(tmp, 'states-nomenu'), pictures=True, full=full))
+    ok(m['TL-006']['status'] == 'captured' and m['TL-006'].get('fromFull') and m['TL-006'].get('stateMissing') and
+       not any(x['status'] == 'uncaptured' and x.get('sid') == 'TL-006' for x in m.values()),
+       'a screen with no state keeps the full scan’s picture, marked “From the full scan” and “No state yet”')
+
+    # version 2 against version 1's full scan: a screen that changed, and a written reason
+    tmp2 = os.path.join(tmp, 'v2states'); os.makedirs(tmp2)
+    app2 = state_v2(tmp2)
+    v2 = os.path.join(tmp, 'states-v2-pics')
+    b = by(scan(os.path.join(app2, 'atlas_states.py'), app2, v2, pictures=True, full=full))
+    ok(b['TL-001'].get('buttonsStale') and not b['TL-002'].get('buttonsStale'), 'Home is marked “Changed since buttons were checked”; List isn’t')
+    ok(b['TL-003']['status'] == 'captured' and len(b['TL-003']['links']) == len(s['TL-003']['links']), 'Settings keeps its buttons after its code key changed')
+    ok(b.get('TL-007', {}).get('noState', '').startswith('Not built yet') and not b['TL-007'].get('stateMissing'), 'a written reason shows as “No state · …”, never as missing')
+
+    # coverage(): the no-browser check for an app's tests
+    c = coverage(STATES_SETTINGS, register=ALL_IDS + ['TL-007'])
+    ok(c['missing'] == [] and 'TL-007' in c['reasons'] and c['register'] == 7, 'coverage(): every Live screen has a state or a reason')
+    less = settings_file(tmp, 'less_states', "ROOTS = [r for r in ROOTS if r.get('screen') != 'TL-004']\n")
+    ok(coverage(less, register=ALL_IDS)['missing'] == ['TL-004'], 'coverage(): taking a state out makes it fail (TL-004)')
+    regf = os.path.join(tmp, 'register.json'); json.dump([{'id': i} for i in ALL_IDS] + [{'id': 'TL-009', 'status': 'Retired in 1.1'}], open(regf, 'w'))
+    rf = settings_file(tmp, 'file_states', "IDS = dict(IDS, register_file=" + repr(regf) + ")\n")
+    cf = coverage(rf)
+    ok(cf['missing'] == [] and cf['register'] == 7, 'coverage() reads a register file; a retired screen needs no state')
+    return full, pics, v2, os.path.join(tmp, 'states-wrong')
+
+
+def t_viewer_states(tmp, s1, v2pics, wrong):
+    print('The viewer: No state yet, Buttons last checked and a Failed state’s reason (1.2)')
+    from playwright.sync_api import sync_playwright
+    sv, sp, sw = Serve(s1), Serve(v2pics), Serve(wrong)
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            pg, errs = viewer_page(b, sv.url)
+            ok(pg.locator('.card[data-id="TL-004"] .badge', has_text='No state yet').count() == 1, 'a screen with no state shows “No state yet” on its card')
+            ok('2 with no state yet' in pg.inner_text('#foot1'), 'the footer counts them')
+            pg.click('nav.side [data-ns]'); pg.wait_for_timeout(150)
+            ok(sorted(c.get_attribute('data-id') for c in pg.locator('.card').all()) == ['TL-004', 'TL-005'], 'the No state yet filter shows only those two')
+            pg.click('.card[data-id="TL-004"]'); pg.wait_for_timeout(150)
+            ok('No state yet' in pg.inner_text('#det') and 'NO_STATE' in pg.inner_text('#det'), 'its details say how to add one')
+            ok(not [x for x in errs if 'ERR_' not in x], 'no errors' + (': ' + '; '.join(errs[:3]) if errs else ''))
+            pg.close()
+
+            pg, errs = viewer_page(b, sp.url)
+            ok('Buttons last checked' in pg.inner_text('#picsBanner'), 'a pictures-only scan says “Buttons last checked …” at the top')
+            ok(pg.locator('.card[data-id="TL-001"] .badge', has_text='Changed since buttons were checked').count() == 1, 'a screen that changed since is marked on its card')
+            pg.click('.card[data-id="TL-001"]'); pg.wait_for_timeout(150)
+            ok('these may have moved' in pg.inner_text('#det'), 'and in its buttons')
+            pg.keyboard.press('Escape'); pg.check('#showCode'); pg.wait_for_timeout(150)
+            ok(pg.locator('.card[data-id="TL-007"]', has_text='No state · Not built yet').count() == 1, 'a written reason shows on its card')
+            ok(pg.locator('nav.side [data-ns]').count() == 0 and 'every Live screen is covered' in pg.inner_text('nav.side'), 'with nothing missing, no filter: “every Live screen is covered”')
+            ok(not [x for x in errs if 'ERR_' not in x], 'no errors on the pictures-only page' + (': ' + '; '.join(errs[:3]) if errs else ''))
+            pg.close()
+
+            pg, errs = viewer_page(b, sw.url)
+            pg.check('#showCode'); pg.click('nav.side [data-f="status"][data-v="failed"]'); pg.wait_for_timeout(150)
+            pg.click('.card[data-id="TL-004"]'); pg.wait_for_timeout(150)
+            ok('opened TL-003 instead of TL-004' in pg.inner_text('#det'), 'a Failed state’s reason shows in its details')
+            pg.close()
+
+            # on a phone
+            pg, errs = viewer_page(b, sv.url, w=402, h=874)
+            chip = pg.locator('#mchips [data-ns]')
+            ok(chip.count() == 1 and chip.is_visible() and 'No state yet 2' in chip.inner_text(), 'on a phone: the No state yet chip is in the top chips')
+            chip.click(); pg.wait_for_timeout(150)
+            ok(sorted(c.get_attribute('data-id') for c in pg.locator('.card').all()) == ['TL-004', 'TL-005'] and
+               pg.locator('.card[data-id="TL-004"] .badge', has_text='No state yet').is_visible(), 'on a phone: it filters to the two, each marked')
+            ok('2 with no state yet' in pg.inner_text('#foot2'), 'on a phone: the footer counts them')
+            ok(not [x for x in errs if 'ERR_' not in x], 'no errors on a phone')
+            pg.close()
+            pg, errs = viewer_page(b, sp.url, w=402, h=874)
+            ok('Buttons last checked' in pg.inner_text('#bfold'), 'on a phone: the folded line says when the buttons were last checked')
+            pg.click('#bfold'); pg.wait_for_timeout(150)
+            ok(pg.locator('#picsBanner').is_visible(), 'on a phone: unfolded, the Pictures only line shows')
+            ok(pg.evaluate('document.documentElement.scrollWidth <= innerWidth'), 'on a phone: nothing scrolls sideways')
+            pg.close()
+            b.close()
+    finally:
+        sv.close(); sp.close(); sw.close()
 
 
 # ---------- the viewer ----------
@@ -632,16 +787,19 @@ def t_notes(tmp, store):
 
 
 def main(argv):
-    parts = argv or ['names', 'shared', 'site', 'state', 'compare', 'viewer', 'phone', 'notes']
+    parts = argv or ['names', 'shared', 'site', 'state', 'compare', 'states', 'viewer', 'phone', 'notes']
     tmp = tempfile.mkdtemp(prefix='atlas-kit-test-')
     try:
         if 'names' in parts: t_names()
         if 'shared' in parts: t_shared()
-        need_scans = {'site', 'state', 'compare', 'viewer', 'phone', 'notes'} & set(parts)
+        need_scans = {'site', 'state', 'compare', 'states', 'viewer', 'phone', 'notes'} & set(parts)
         if need_scans:
             p1 = t_site(tmp)
             s1 = t_state(tmp)
             s2 = t_compare(tmp, s1, p1) if {'compare', 'viewer', 'phone', 'notes'} & set(parts) else None
+            if 'states' in parts:
+                _, _, v2p, wr = t_states(tmp, s1)
+                t_viewer_states(tmp, s1, v2p, wr)
             if {'viewer', 'phone', 'notes'} & set(parts):
                 store = t_viewer(tmp, s1, s2)
                 if 'phone' in parts: t_phone(tmp, s1, s2, store)

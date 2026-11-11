@@ -111,6 +111,29 @@ TITLE_JS = """o=>{const vis=e=>{const r=e.getBoundingClientRect();return r.width
  const root=document.querySelector(o.root)||document.body;const h=[...root.querySelectorAll('h1,h2')].find(vis);
  return ((h&&h.innerText)||document.title||'').replace(/\\s+/g,' ').trim()}"""
 
+# 1.2 · a tap by part name: finds the part while its screen is showing and marks it (data-atlas-tap) for a real tap.
+# o: {attr, part, sheet, screen, name, css, text, sel}. A screen's parts are anywhere outside an open sheet (bars and
+# docks count); a sheet's are inside it; a shared part ('› name') is looked for in an open sheet first.
+TAP_JS = """o=>{const vis=e=>{const r=e.getBoundingClientRect();return r.width&&r.height&&getComputedStyle(e).visibility!=='hidden'};
+ document.querySelectorAll('[data-atlas-tap]').forEach(e=>e.removeAttribute('data-atlas-tap'));
+ const sh=o.sheet?[...document.querySelectorAll(o.sheet)].find(vis):null;
+ let shId=null,scId=null;
+ if(sh){const e=sh.hasAttribute(o.attr)?sh:sh.querySelector('['+o.attr+']');shId=e?e.getAttribute(o.attr):null}
+ for(const e of document.querySelectorAll('['+o.attr+']')){if(sh&&sh.contains(e))continue;const r=e.getBoundingClientRect();if(!r.width&&!r.height)continue;scId=e.getAttribute(o.attr);break}
+ let scope=document,skip=null;
+ if(o.screen){if(sh&&shId===o.screen)scope=sh;else if(scId===o.screen)skip=sh;
+  else return {err:'showing',showing:sh?(shId||'a sheet with no ID'):(scId||'a screen with no ID')}}
+ const q=s=>String(s).replace(/["\\\\]/g,'\\\\$&');
+ const find=css=>{let l;try{l=[...scope.querySelectorAll(css)]}catch(e){return null}
+  return l.filter(e=>vis(e)&&!(skip&&skip.contains(e))&&(!o.text||((e.innerText||e.textContent||'').includes(o.text))))};
+ let hits=find('['+o.part+'="'+q(o.name)+'"]'+(o.css||''));
+ if(hits&&!hits.length&&o.sel)hits=find(':is('+o.sel+')'+(o.css||''));
+ if(hits===null)return {err:'css'};
+ if(!o.screen&&sh&&hits.length){const inS=hits.filter(e=>sh.contains(e));if(inS.length)hits=inS}
+ if(!hits.length)return {err:'none'};
+ hits[0].setAttribute('data-atlas-tap','1');return {n:hits.length}}"""
+TAPPED = '[data-atlas-tap="1"]'
+
 BOX_JS = """e=>{const r=e.getBoundingClientRect();return {x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height),
  label:(e.getAttribute('aria-label')||e.innerText||e.value||'').replace(/\\s+/g,' ').trim().slice(0,60)}}"""
 

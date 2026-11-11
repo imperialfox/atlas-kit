@@ -160,3 +160,33 @@ Each kit version gets its own Render and Build here. No Q number: the kit belong
 **For Ivan's phone:** in the kit's demo page, the "Buttons last checked" line, the "No state yet" filter and a Failed state's reason read clearly.
 
 **Risk:** a reused page could carry something over between states; the reused-vs-fresh picture check covers it.
+
+## Debrief · kit 1.2 (12 Nov 2026)
+
+**What's in it:** items 1–8 above. See `CHANGELOG.md` › 1.2.0 and README › States and › Pictures-only rescans.
+
+- **States by screen ID** (`atlas_kit/engine.py`, `settings.py`): a starting screen with `screen='AB-041'` is checked against the ID on the page after its steps ("Didn’t open: opened AB-003 instead of AB-004"). It needs no `id`, title, area or kind (they come from the screen and the register), and a state with a `state` name is a variant of its screen's plain state. A failed state stays listed under the ID it names, and isn't also listed as found in code only.
+- **Taps by part name** (`atlas_kit/states.py`, `browser.py` › `TAP_JS`): `'AB-003 › about-row'` while AB-003 is showing, `'› settings-tab'` for a shared part, CSS after the name to narrow it, `:has-text()` by what it says. The register's `{name, sel, was}` parts are used when the page has no such name. Starting screens, flows' `tap` and `fill` all take them. A tap that can't be done says which screen is showing, or that no part by that name is on screen.
+- **Pictures-only** (`--pictures`): every state through its steps, no button tests, no extra passes, flows and proposed screens included; buttons, links, doors and the map from the latest full scan (`atlas.py` finds it: `scan.mode == 'full'`, or a scan from before 1.2 with links), labelled "Buttons last checked <date>"; "Changed since buttons were checked" on a screen whose picture differs from the full scan's.
+- **Coverage:** "No state yet" on the card (on a phone too), a filter in the side panel and the phone's top chips, the footer count and the scan's summary; `NO_STATE` reasons shown as "No state · <reason>"; `atlas_kit.coverage(settings, register=…)` for an app's tests, with no browser.
+- **Faster capture:** one page per worker for states with the same set-up, put back with `RESET` and the frozen clock (`--fresh-pages` / `REUSE = False` to turn it off); the full-length picture only when the screen is taller than the view.
+- **Suggested states:** a full scan writes `suggested_states.py`, with taps by part name where the part has one.
+
+**Decided along the way (defaults, all changeable):**
+- A starting screen without `screen` still counts as the state of the screen it opened, in a scan. `coverage()` can only count the ones that name their `screen`, since it has no browser.
+- A pictures-only scan keeps a screen the full scan reached only by tapping, with the full scan's picture, marked "From the full scan" (and "No state yet" when it's in the register), so the map and its lines stay whole.
+- The "Buttons last checked" line shows on pictures-only scans only. On a full scan it would just repeat the scan's own date.
+- On a phone, cards still hide their badges as in 1.1, except "No state yet".
+- The kit doesn't add a settle check of its own: an app's `where` hook waits for its screen to stop moving before every picture, as before (Vocal Sessions' three-still-frames check).
+
+**Checked:** `python3 tests/test_kit.py`: 181 checks pass (134 from 1.1, unchanged, and 47 new), with the Prototype kit 1.1.0 beside it. The new checks run the made-up app with a state for every screen (`tests/apps/state/atlas_states.py`): every screen opens through its state; part-name taps in states and a flow; three wrong states fail with the right words; a pictures-only scan keeps the full scan's links and date, matches its pictures and is faster (about 4 s against 7 s); reused pages give the same pictures as fresh pages; version 2 marks Home "Changed since buttons were checked" and shows a written reason; a screen with no state keeps the full scan's picture; suggested states with part names; `coverage()` from a list and from a register file, failing when a state is taken out; and the viewer's new lines on a computer and at iPhone size. The states checks ran three times in a row without a miss. All of it on Playwright 1.63: the browser for Vocal Sessions' pinned 1.56 can't be downloaded in this workspace, so Q46 runs it on 1.56 first, as its handoff says.
+
+**Demo:** [Atlas kit demo](https://claude.ai/artifact/G6mPQt1qo3iUDaoDMkqFEu) republished on 1.2: the made-up app at version 2, pictures only, against version 1's full scan, with one state that opens the wrong screen and one screen left without a state (its store and downloads as before).
+
+**Next:** Vocal Sessions Q46 · Atlas: Screen States (its Build was given on 11 Nov 2026, 21:49).
+
+**For Ivan's phone:**
+1. Open the demo. The folded line at the top starts "Buttons last checked …". Tap it: the Pictures only box says the same, with how many screens changed since.
+2. Tap the **No state yet 1** chip at the top: only Item menu shows, marked "No state yet".
+3. Tap **All**, then **▲ Failed 1**, then About: its Status reads "Didn’t open: opened TL-003 instead of TL-004".
+4. Tap Home: under Leads to, the line says the buttons were last checked, and that Home changed since.

@@ -93,6 +93,38 @@ class Settings:
         self.roots = [dict(r) for r in g('ROOTS', [])]
         if self.kind == 'screens' and not self.roots:
             self.roots = [dict(id='start', title=None, steps=[], setup=[])]
+        # 1.2 · states: a starting screen can name the screen ID it must open (screen='AB-041'), and a screen that
+        # can't be held on screen with sample data can be listed with a written reason instead (NO_STATE)
+        self.no_state = {str(k): str(v) for k, v in dict(g('NO_STATE', {})).items()}
+        self.reuse = g('REUSE', True)
+        self._states()
+
+    def _states(self):
+        """States by screen ID: an id made from the screen when there isn't one, and a variant (a state with a `state`
+        name and no `state_of`) belongs to the plain state of the same screen."""
+        def slug(s): return re.sub(r'[^a-z0-9]+', '-', str(s).lower()).strip('-')
+        used = {r['id'] for r in self.roots if r.get('id')}
+        for r in self.roots:
+            if r.get('id'): continue
+            if not r.get('screen'):
+                raise SystemExit(f'{self.path}: every starting screen needs an id, or a screen ID (screen=...)')
+            base = slug(r['screen']) + ('-' + slug(r['state']) if r.get('state') else '')
+            rid = base
+            while rid in used: rid += '-2'
+            r['id'] = rid; used.add(rid)
+        plain = {}
+        for r in self.roots:
+            if r.get('screen') and not r.get('state') and not r.get('state_of'): plain.setdefault(r['screen'], r['id'])
+        for r in self.roots:
+            if r.get('screen') and r.get('state') and not r.get('state_of') and plain.get(r['screen']) not in (None, r['id']):
+                r['state_of'] = plain[r['screen']]
+
+    def state_screens(self):
+        """{screen ID: [starting screen ids]} for every starting screen that names its screen."""
+        out = {}
+        for r in self.roots:
+            if r.get('screen'): out.setdefault(str(r['screen']), []).append(r['id'])
+        return out
         if self.kind == 'screens' and not hasattr(mod, 'load'):
             raise SystemExit(f'{path}: an app of screens without addresses needs a load(page, setup, ctx) function')
 

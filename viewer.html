@@ -174,6 +174,7 @@ footer .r{margin-left:auto}
   main{padding:12px}
   .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
   .meta span{display:none}
+  .meta .badges .badge.nost{display:inline-block;font-size:9px;padding:1px 6px}
   aside.det{position:fixed;inset:0;z-index:15;max-width:none;border:0}
   .dshot{flex-basis:150px}
   footer .r,#foot1{display:none}
@@ -193,6 +194,9 @@ footer .r{margin-left:auto}
 .dcap{font-size:13px;line-height:1.45;color:var(--ink);margin:0}
 .badge.tnew{color:#0b1b33;background:#7fb0ff;border-color:#7fb0ff}.badge.tch{color:#2e1d00;background:var(--amber);border-color:var(--amber)}
 .badge.prop{color:#d9c2ff;border-color:#4b3a6e}
+.badge.wrap{white-space:normal;text-align:left}.badge.nost{color:#2e1d00;background:var(--amber);border-color:var(--amber)}
+.banner.pics{background:#1f1d2b;border-color:#3b3456}
+.chip.warn{color:var(--amber);border-color:var(--amberB)}
 .chip.tnew{color:var(--link);border-color:#24406e}.chip.tch{color:var(--amber);border-color:var(--amberB)}
 .th.nf{background:transparent;border:1.5px dashed #6b3430;display:grid;place-items:center;color:var(--red);font-size:11px;text-align:center;padding:8px}
 .side select{height:30px;}.sel{height:32px;}
@@ -347,7 +351,7 @@ footer .r{margin-left:auto}
 </div>
 <script>
 'use strict';
-const KIT_VERSION = '1.1.0';
+const KIT_VERSION = '1.2.0';
 const KINDS = ['Tab','Screen','Sub-page','Sheet','State','Page'];
 const EXTRA_AREAS = ['Other','Not captured yet','Not found this scan','Gone since the last scan','No longer in the code'];
 const STATUS = {captured:'✓ Captured', failed:'▲ Failed', uncaptured:'Not captured yet', notfound:'Not found this scan', gone:'– Gone'};
@@ -477,7 +481,7 @@ function closeZoom(){ $('zoomv').classList.remove('open'); $('zin').innerHTML = 
 function toast(t, ms){ const o=document.querySelector('.toast'); if(o) o.remove(); const el=document.createElement('div'); el.className='toast'; el.setAttribute('role','status'); el.textContent=t; document.body.appendChild(el); setTimeout(()=>el.remove(), ms||2200); }
 
 let A = null, byId = {}, ALIAS = {}, AREAS = [];
-const DEF = {view:'lightbox', area:null, status:null, kind:null, group:'area', q:'', showCode:false, size:150, open:null, sel:null, tabbar:false, stays:false, onlyChanged:false,
+const DEF = {view:'lightbox', area:null, status:null, kind:null, group:'area', q:'', showCode:false, size:150, open:null, sel:null, tabbar:false, stays:false, onlyChanged:false, noStateOnly:false,
   edge:null, mapKinds:{Button:true,'Opens a sheet':true,Back:false,'Tab bar':false,[DOOR]:true}, mapLabels:false, drawer:false, nFilter:'open', since:'', sinceOnly:'', flow:null, step:0};
 let S = Object.assign({}, DEF);
 const screenOf = id => byId[id] ? id : (ALIAS[id] && byId[ALIAS[id]] ? ALIAS[id] : null);
@@ -527,7 +531,7 @@ function renderNotesBtn(){
 
 // ---------- helpers ----------
 function fmtWhen(iso){ const d=new Date(iso); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
-function save(){ const keep = {}; for (const k of ['view','area','status','kind','group','showCode','size','tabbar','stays','onlyChanged','mapKinds','mapLabels','nFilter','since','sinceOnly','flow','cols']) keep[k] = S[k]; store.set('view', keep); }
+function save(){ const keep = {}; for (const k of ['view','area','status','kind','group','showCode','size','tabbar','stays','onlyChanged','noStateOnly','mapKinds','mapLabels','nFilter','since','sinceOnly','flow','cols']) keep[k] = S[k]; store.set('view', keep); }
 const changed = s => s.change && s.change.kind && s.change.kind !== 'not-recaptured';
 const hidden = s => s.status==='uncaptured' || s.status==='notfound';
 const tagOf = s => S.since && s.since ? s.since[S.since] || null : null;
@@ -543,7 +547,8 @@ function hay(s){
 function visible(){
   const q = S.q.trim().toLowerCase();
   return A.screens.filter(s => {
-    if (hidden(s) && !S.showCode && S.status!==s.status) return false;
+    if (S.noStateOnly && !s.stateMissing) return false;
+    if (hidden(s) && !S.showCode && S.status!==s.status && !S.noStateOnly) return false;
     if (S.onlyChanged && !changed(s)) return false;
     if (S.sinceOnly && (S.sinceOnly==='any' ? !tagOf(s) : tagOf(s)!==S.sinceOnly)) return false;
     if (S.area && s.area!==S.area) return false;
@@ -571,6 +576,10 @@ function badges(s){
   if (t) b.push('<span class="badge '+(t==='new'?'tnew':'tch')+'">'+(t==='new'?'NEW':'CHANGED')+'</span>');
   if (!t && s.change && CHANGE[s.change.kind]) { const [tx,c]=CHANGE[s.change.kind]; b.push('<span class="badge '+c+'" title="'+esc(tx+(s.change.pct?' · '+s.change.pct+'% of the screen':''))+'">'+(s.change.kind==='looks-different'?'◆ Changed':tx)+'</span>'); }
   if (proposedFor(s.id).length || listedFor(s.id).length) b.push('<span class="badge prop">Proposed</span>');
+  if (s.stateMissing) b.push('<span class="badge nost" title="A Live screen in the register with no state and no written reason">No state yet</span>');
+  if (s.noState) b.push('<span class="badge wrap">No state · '+esc(s.noState)+'</span>');
+  if (s.buttonsStale) b.push('<span class="badge ch wrap" title="Its picture changed since the last full scan tapped its buttons">Changed since buttons were checked</span>');
+  if (s.fromFull) b.push('<span class="badge wrap" title="No state in this scan: the picture and buttons are from the full scan">From the full scan</span>');
   if (s.status==='failed') b.push('<span class="badge fail">▲ Failed</span>');
   else if (s.status==='uncaptured') b.push('<span class="badge unc">Not captured yet</span>');
   else if (s.status==='notfound') b.push('<span class="badge fail">Not found this scan</span>');
@@ -621,34 +630,44 @@ function renderSide(){
   const since = B.length ? '<div><div class="h">Tags since</div><select id="since" aria-label="Tag screens NEW or CHANGED since a scan"><option value="">Off</option>'+
       B.map(b=>'<option value="'+esc(b.id)+'" '+(S.since===b.id?'selected':'')+'>'+esc(b.version||'?')+' · '+fmtWhen(b.at)+'</option>').join('')+'</select>'+
       (S.since?'<div class="chips" style="margin-top:8px"><button class="chip tnew" data-so="new" aria-pressed="'+(S.sinceOnly==='new')+'">NEW '+tn+'</button><button class="chip tch" data-so="changed" aria-pressed="'+(S.sinceOnly==='changed')+'">CHANGED '+tc+'</button></div>':'')+'</div>' : '';
+  const SX = A.states, nms = SX ? SX.missing.length : 0, nrs = SX ? Object.keys(SX.reasons||{}).length : 0;
+  const statesSect = SX ? '<div><div class="h">States</div>'+(nms?'<div class="chips"><button class="chip warn" data-ns="1" aria-pressed="'+S.noStateOnly+'">No state yet '+nms+'</button></div>':'')+
+      '<p class="note" style="padding:0 10px;margin:'+(nms?'6px':'0')+' 0 0">'+SX.screens+' screen'+(SX.screens===1?' has':'s have')+' a state'+(nrs?' · '+nrs+' with a written reason':'')+(nms?'':' · every Live screen is covered')+'.</p></div>' : '';
   const ids = A.ids;
   const idsLine = ids ? '<p class="note" style="padding:0 10px;margin:0">Screen IDs from the app’s register ('+ids.register+')'+(ids.noId.length?' · <b style="color:var(--amber)">'+ids.noId.length+' with no ID yet</b>':'')+(ids.notFound.length?' · '+ids.notFound.length+' not found this scan':'')+'.</p>' : '';
   $('side').innerHTML =
     '<div><div class="h">Areas</div>'+areaBtns+'</div>'+
     (A.scan.prev?'<div><div class="h">Since last scan</div><div class="chips"><button class="chip ch" data-only="1" aria-pressed="'+S.onlyChanged+'">◆ Changed '+nch+'</button></div></div>':'')+
-    since+
+    since+statesSect+
     '<div><div class="h">Status</div><div class="chips">'+st+'</div></div>'+
     '<div><div class="h">Kind</div><div class="chips">'+kd+'</div></div>'+
     '<div><div class="h">Group by</div><div class="seg" style="margin:0 10px" role="group" aria-label="Group by">'+gb+'</div></div>'+
     '<label class="toggle"><input type="checkbox" id="showCode" '+(S.showCode?'checked':'')+'> Show screens not captured ('+nh+')</label>'+
     idsLine+
     '<p class="note" style="padding:0 10px;margin:0">Saved screenshots from a scan with '+esc(A.scan.data||'sample data')+', not live. “Found in code” means the app can show it, but nothing the scan tapped opened it.</p>';
-  $('mchips').innerHTML = '<button class="chip" data-f="area" data-v="" aria-pressed="'+(!S.area&&!S.status&&!S.onlyChanged&&!S.sinceOnly)+'">All '+total+'</button>'+
+  $('mchips').innerHTML = '<button class="chip" data-f="area" data-v="" aria-pressed="'+(!S.area&&!S.status&&!S.onlyChanged&&!S.sinceOnly&&!S.noStateOnly)+'">All '+total+'</button>'+
     (A.scan.prev?'<button class="chip ch" data-only="1" aria-pressed="'+S.onlyChanged+'">◆ Changed '+nch+'</button>':'')+
+    (nms?'<button class="chip warn" data-ns="1" aria-pressed="'+S.noStateOnly+'">No state yet '+nms+'</button>':'')+
     (S.since?'<button class="chip tnew" data-so="new" aria-pressed="'+(S.sinceOnly==='new')+'">NEW '+tn+'</button><button class="chip tch" data-so="changed" aria-pressed="'+(S.sinceOnly==='changed')+'">CHANGED '+tc+'</button>':'')+
     AREAS.filter(a=>ca[a]&&!EXTRA_AREAS.includes(a)).map(a=>'<button class="chip" data-f="area" data-v="'+esc(a)+'" aria-pressed="'+(S.area===a)+'">'+esc(a)+'</button>').join('')+
     '<button class="chip fail" data-f="status" data-v="failed" aria-pressed="'+(S.status==='failed')+'">▲ Failed '+(cs.failed||0)+'</button>'+
     '<button class="chip unc" data-f="status" data-v="uncaptured" aria-pressed="'+(S.status==='uncaptured')+'">In code only '+(cs.uncaptured||0)+'</button>'+
     (B.length?'<select class="sel" id="since2" aria-label="Tags since" style="margin:0"><option value="">Tags since: off</option>'+B.map(b=>'<option value="'+esc(b.id)+'" '+(S.since===b.id?'selected':'')+'>Since '+esc(b.version||'?')+' · '+fmtWhen(b.at)+'</option>').join('')+'</select>':'');
 }
+function buttonsChecked(){ const b = A.scan.buttons; return b ? 'Buttons last checked '+fmtWhen(b.at)+(b.version?' ('+b.version+')':'') : 'Buttons not checked yet: run a full scan'; }
 function banner(){
-  const p = A.scan.prev; let h = '';
-  if (isPhone() && !S.bannerOpen && (p || S.since)) {
+  const p = A.scan.prev, pics = A.scan.mode==='pictures'; let h = '';
+  if (isPhone() && !S.bannerOpen && (p || S.since || pics)) {
     const b = (A.scan.baselines||[]).find(x=>x.id===S.since);
-    const bits = [p ? '◆ '+A.screens.filter(changed).length+' changed since the last scan' : '', b ? 'tagged since '+(b.version||'?') : ''].filter(Boolean);
+    const bits = [pics ? buttonsChecked() : '', p ? '◆ '+A.screens.filter(changed).length+' changed since the last scan' : '', b ? 'tagged since '+(b.version||'?') : ''].filter(Boolean);
     return '<button class="bfold" id="bfold" aria-expanded="false">'+esc(bits.join(' · '))+'<span>›</span></button>';
   }
-  if (isPhone() && (p || S.since)) h += '<button class="bfold" id="bfold" aria-expanded="true">Fold these away<span>⌃</span></button>';
+  if (isPhone() && (p || S.since || pics)) h += '<button class="bfold" id="bfold" aria-expanded="true">Fold these away<span>⌃</span></button>';
+  if (pics) {
+    const n = A.screens.filter(s=>s.buttonsStale).length;
+    h += '<div class="banner pics" id="picsBanner"><div style="display:flex;flex-direction:column;gap:3px"><strong>Pictures only</strong>'+
+      '<span class="note">'+esc(buttonsChecked())+'. Buttons, links and the map are from that full scan'+(n?'; '+n+' screen'+(n>1?'s':'')+' changed since buttons were checked':'')+'.</span></div></div>';
+  }
   if (p) {
     const c = k => A.screens.filter(s=>s.change&&s.change.kind===k).length;
     h += '<div class="banner"><div style="display:flex;flex-direction:column;gap:3px;min-width:240px"><strong>Changes since the last scan</strong>'+
@@ -762,6 +781,7 @@ function renderDet(){
         '<div><dt>Status</dt><dd>'+STATUS[s.status]+(t?' · <span class="badge '+(t==='new'?'tnew':'tch')+'">'+(t==='new'?'NEW':'CHANGED')+'</span>':'')+(s.why?'<br><span class="note">'+esc(s.why)+'</span>':'')+'</dd></div>'+
         (s.status==='captured'?'<div><dt>Saved screenshot</dt><dd>'+fmtWhen(A.scan.at)+' · '+esc(vp.name)+' '+vp.w+' × '+vp.h+(s.fullHeight>vp.h?' · full length '+s.fullHeight+' pt':'')+'<br><span class="note">Not live: from the scan of '+esc(A.scan.version)+'</span></dd></div>':'')+
         (via?'<div><dt>Found by</dt><dd>'+via+'</dd></div>':'')+
+        (stateRow(s)?'<div><dt>State</dt><dd>'+stateRow(s)+'</dd></div>':'')+
         (s.setup&&s.setup.length?'<div><dt>Set up with</dt><dd>'+esc(s.setup.join(', '))+'</dd></div>':'')+
         '<div><dt>Explained in</dt><dd>'+docs+'</dd></div>'+
         '<div><dt>Last mentioned in changelog</dt><dd>'+m+'</dd></div>'+
@@ -775,7 +795,8 @@ function renderDet(){
       (s.status==='captured'?proposedSect(s):'')+
       (nn.length?'<div class="sect"><div class="h">Notes · '+nn.length+'</div>'+nn.map(noteRow).join('')+'</div>':'')+
       (own?'<div class="sect"><div class="h">Buttons</div><p class="note">The same screen in another state: its buttons are listed on <button class="more" data-go="'+esc(own.id)+'">'+esc(own.title)+'</button>.</p></div>':'')+
-      ((L.length||doorsOut.length)?'<div class="sect"><div class="h">Leads to · '+(main.length+doorsOut.length)+'</div>'+(main.length?main.map(linkRow).join(''):(doorsOut.length?'':'<p class="note">Only the tab bar and buttons that change this screen.</p>'))+
+      ((L.length||doorsOut.length)?'<div class="sect"><div class="h">Leads to · '+(main.length+doorsOut.length)+'</div>'+
+        (A.scan.mode==='pictures'?'<p class="note" style="margin:0 0 6px">'+esc(buttonsChecked())+(s.buttonsStale?' · <span style="color:var(--amber)">Changed since buttons were checked: these may have moved</span>':'')+'</p>':'')+(main.length?main.map(linkRow).join(''):(doorsOut.length?'':'<p class="note">Only the tab bar and buttons that change this screen.</p>'))+
         doorsOut.map(x=>doorRow(x,true)).join('')+
         (stays.length?'<button class="more" data-t="stays">'+(S.stays?'Hide':'Show')+' '+stays.length+' that change this screen</button>'+(S.stays?stays.map(linkRow).join(''):''):'')+
         (tabbar.length?'<br><button class="more" data-t="tabbar">'+(S.tabbar?'Hide':'Show')+' tab bar ('+tabbar.length+')</button>'+(S.tabbar?tabbar.map(linkRow).join(''):''):'')+'</div>':'')+
@@ -786,6 +807,13 @@ function renderDet(){
       (s.how?'<div class="sect"><div class="h">How the scan opened it</div><div class="code">'+esc(s.how)+'</div></div>':'')+
     '</div>';
   requestAnimationFrame(sizeWipes);
+}
+function stateRow(s){
+  if (s.stateMissing) return '<span style="color:var(--amber)">No state yet</span><br><span class="note">Add one to the settings’ starting screens (screen=…), or a written reason (NO_STATE).</span>';
+  if (s.noState) return 'No state · '+esc(s.noState);
+  if (s.fromFull) return 'None in this scan<br><span class="note">Picture and buttons from the full scan of '+fmtWhen(s.fromFull.at)+'</span>';
+  if (A.states && s.found==='Root') return 'Its own state'+(s.state?' · '+esc(s.state):'')+'<br><span class="note">Opened through its steps below'+(s.screen?', checked by its screen ID':'')+'</span>';
+  return '';
 }
 function sizeWipes(){ document.querySelectorAll('[data-wipe]').forEach(w => { const i = w.querySelector('.top img'); if (i) i.style.width = w.clientWidth+'px'; }); }
 function renderEdge(){
@@ -1242,9 +1270,10 @@ document.addEventListener('click', e => {
   if (t.id==='rescan') { $('pop').classList.toggle('open'); return; }
   if (t.dataset.view) { setView(t.dataset.view); return; }
   if (t.dataset.only) { S.onlyChanged = !S.onlyChanged; render(); return; }
+  if (t.dataset.ns) { S.noStateOnly = !S.noStateOnly; render(); return; }
   if (t.dataset.so) { S.sinceOnly = S.sinceOnly===t.dataset.so ? '' : t.dataset.so; render(); return; }
   if (t.id==='sinceOff') { S.since = ''; S.sinceOnly = ''; render(); return; }
-  if (t.dataset.f) { const f=t.dataset.f, v=t.dataset.v||null; if (f==='area'&&!v) {S.area=null;S.status=null;S.onlyChanged=false;S.sinceOnly='';} else S[f] = S[f]===v ? null : v; if (f==='status'&&(v==='uncaptured'||v==='notfound')) S.showCode=true; render(); return; }
+  if (t.dataset.f) { const f=t.dataset.f, v=t.dataset.v||null; if (f==='area'&&!v) {S.area=null;S.status=null;S.onlyChanged=false;S.sinceOnly='';S.noStateOnly=false;} else S[f] = S[f]===v ? null : v; if (f==='status'&&(v==='uncaptured'||v==='notfound')) S.showCode=true; render(); return; }
   if (t.dataset.g) { S.group = t.dataset.g; render(); return; }
   if (t.classList.contains('card')) { select(t.dataset.id, true); return; }
   if (t.dataset.lb) { setView('lightbox'); select(t.dataset.lb, true); return; }
@@ -1262,7 +1291,7 @@ document.addEventListener('click', e => {
   if (t.id==='bfold') { S.bannerOpen = !S.bannerOpen; renderMain(); return; }
   if (t.id==='mopts') { S.mapOpts = !S.mapOpts; renderMap(); return; }
   if (t.id==='mkey') { S.mapKey = !S.mapKey; renderMap(); return; }
-  if (t.id==='clearf') { Object.assign(S,{area:null,status:null,kind:null,q:'',onlyChanged:false,sinceOnly:''}); $('q').value=''; render(); return; }
+  if (t.id==='clearf') { Object.assign(S,{area:null,status:null,kind:null,q:'',onlyChanged:false,sinceOnly:'',noStateOnly:false}); $('q').value=''; render(); return; }
   if (t.id==='addNote') { openNote(S.open); return; }
   if (t.id==='plist') { S.listing = S.open; renderDet(); const i = $('plink'); if (i) i.focus(); return; }
   if (t.id==='pcancel') { S.listing = null; renderDet(); return; }
@@ -1350,6 +1379,7 @@ fetch('atlas.json').then(r => { if (!r.ok) throw new Error(r.status); return r.j
   S = Object.assign({}, DEF, store.get('view', {}), {open:null, edge:null, drawer:false});
   S.mapKinds = Object.assign({}, DEF.mapKinds, S.mapKinds||{});
   if (S.since && !(A.scan.baselines||[]).some(b=>b.id===S.since)) { S.since=''; S.sinceOnly=''; }
+  if (S.noStateOnly && !(A.states && A.states.missing.length)) S.noStateOnly = false;
   MV = store.get('mapview', MV);
   AREAS = [...(A.areas||[])]; for (const s of A.screens) if (!AREAS.includes(s.area) && !EXTRA_AREAS.includes(s.area)) AREAS.push(s.area); AREAS.push(...EXTRA_AREAS);
   document.title = 'Atlas · '+A.app.name;
@@ -1357,10 +1387,11 @@ fetch('atlas.json').then(r => { if (!r.ok) throw new Error(r.status); return r.j
   $('appv').textContent = (A.scan.version?A.scan.version+' · ':'')+(A.scan.commit||'').split(' ')[0];
   $('flowsTab').textContent = 'Flows'+(A.flows.length?' · '+A.flows.length:'');
   $('stamp').textContent = 'Saved screenshots from '+fmtWhen(A.scan.at)+', not live';
-  $('foot2').textContent = A.screens.filter(s=>s.status==='captured').length+' screens · saved '+fmtWhen(A.scan.at)+', not live';
+  const nst = A.states ? A.states.missing.length : 0;
+  $('foot2').textContent = A.screens.filter(s=>s.status==='captured').length+' screens · saved '+fmtWhen(A.scan.at)+', not live'+(nst?' · '+nst+' with no state yet':'');
   const cap = A.screens.filter(s=>s.status==='captured').length, nb = A.screens.reduce((n,s)=>n+s.links.length,0);
   const seen = A.screens.reduce((n,s)=>n+s.links.filter(l=>l.how==='seen').length,0);
-  $('foot1').textContent = cap+' captured · '+A.screens.filter(s=>s.status==='failed').length+' failed · '+A.screens.filter(s=>s.status==='uncaptured').length+' found in code only · '+nb+' buttons, '+seen+' seen working · '+A.flows.length+' flows · '+A.scan.viewport.name+' · Atlas kit '+(A.kit||KIT_VERSION);
+  $('foot1').textContent = cap+' captured · '+A.screens.filter(s=>s.status==='failed').length+' failed · '+A.screens.filter(s=>s.status==='uncaptured').length+' found in code only · '+nb+' buttons, '+seen+' seen working · '+A.flows.length+' flows'+(A.states?' · '+nst+' with no state yet':'')+(A.scan.mode==='pictures'?' · pictures only, '+buttonsChecked().toLowerCase():'')+' · '+A.scan.viewport.name+' · Atlas kit '+(A.kit||KIT_VERSION);
   $('size').value = S.size; document.documentElement.style.setProperty('--thumb', S.size+'px'); document.documentElement.style.setProperty('--cols', S.cols||3);
   const h = decodeURIComponent(location.hash.replace(/^#s-/, '')), hid = screenOf(h); if (hid) { S.sel = S.open = hid; if (S.view==='flows') S.view='lightbox'; }
   wireMap(); renderNotesBtn(); render(); setView(S.view);

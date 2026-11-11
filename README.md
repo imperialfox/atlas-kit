@@ -1,8 +1,8 @@
 # Atlas kit
 
-![version](https://img.shields.io/badge/version-1.1.0-007aff)
+![version](https://img.shields.io/badge/version-1.2.0-007aff)
 
-**Current version:** 1.1.0 · 3 Nov 2026 · [changelog](CHANGELOG.md)
+**Current version:** 1.2.0 · 12 Nov 2026 · [changelog](CHANGELOG.md)
 
 *See the real app: every screen as a saved screenshot, how they link, what changed, and notes on real screens that Claude can read.*
 
@@ -20,6 +20,8 @@ One Atlas for any app or website. The kit scans the app in a throwaway browser w
 - **Changes since the last scan:** new, gone, looks different (with a before/now wipe), links changed, failed this time, and the versions released in between.
 - **Screen IDs:** when the app keeps a register of its screens, IDs are the keys for everything (screens, notes, flows, captions, tags, the map layout), so they survive renames. A screen with no ID yet is flagged with a suggested number.
 - **Proposed screens:** a prototype listed against a real screen shows beside it, with the same wipe.
+- **States (1.2):** every screen can have a state: its sample data and the real taps that reach it, by part name (`AB-001 › add-button`). A state that lands on the wrong screen fails with "opened AB-0xx instead". A screen with no state is flagged **No state yet**, with a filter; one that can't be held on screen gets a written reason instead.
+- **Pictures-only rescans (1.2):** `--pictures` takes every state's picture and taps nothing else, so it's quick. Buttons, links and the map come from the latest full scan, labelled **Buttons last checked <date>**; a screen whose picture changed since then is marked **Changed since buttons were checked**.
 
 The screenshots are saved, not live. The page says so wherever it matters.
 
@@ -62,19 +64,23 @@ python3 atlas.py --settings path/to/atlas_settings.py             scan, then ope
 python3 atlas.py --settings … --view                             open the last scan again, without scanning
 python3 atlas.py --settings … --no-open                          scan only
 python3 atlas.py --settings … --quick                            the starting screens only, no tapping (fast)
+python3 atlas.py --settings … --pictures                         every state's picture, no button tests; buttons from the last full scan
+python3 atlas.py --settings … --fresh-pages                      a fresh page for every state (no page reuse), to compare
 python3 atlas.py --settings … --proposed proposed.json           also capture prototypes listed against real screens
 ```
 
 Scans are kept in `data/scans/<date-time>/` beside the settings file (`atlas.json`, `shots/` and the viewer as `index.html`), so each scan can be compared with the ones before it. **Never commit `data/`:** screenshots and notes stay out of public repos.
 
-From a Claude chat, say **"rescan the Atlas"**: Claude runs the scan in its own workspace and updates the private Atlas page on claude.ai.
+From a Claude chat, say **"rescan the Atlas"**: Claude runs the scan in its own workspace and updates the private Atlas page on claude.ai. Each app says in its own README whether that's the pictures-only scan or the full one.
+
+A full scan also writes `suggested_states.py` beside its results: a draft state for every screen it found by tapping that has no state yet (see [States](#states)).
 
 ## Adding an app
 
 1. **Make a settings file** in the app's own repo (for example `tools/atlas/atlas_settings.py`). Start from one of the worked examples in `tests/apps/`: `site/atlas_settings.py` for a website, `state/atlas_settings.py` for an app of screens.
 2. **Give it the basics:** `APP` (name, and the live address), `KIND`, `VIEWPORT`, and `APP_DIR` (the app's folder, from the settings file).
 3. **For an app of screens,** write `load(page, setup, ctx)`: open `ctx['url'] + 'index.html'` and fill it with sample data, never real data. Then `WHERE` (how to tell which screen is showing) and, if you can, `SNAPSHOT` and `RESET` (put it back after a tap, quicker than starting again).
-4. **List the starting screens** in `ROOTS`: the tabs, through their real buttons, plus any states worth seeing (first launch, dark).
+4. **List the starting screens** in `ROOTS`: the tabs, through their real buttons, plus any states worth seeing (first launch, dark). With screen IDs, give each screen a state by its ID (see [States](#states)); a full scan's `suggested_states.py` writes the first drafts for you.
 5. **Run a scan** and look. Anything the scan couldn't reach shows as "Not captured yet"; add a starting screen for it, or a hand-written door if a tap can't reach it.
 6. **Add the extras when you want them:** captions, flows, doors, screen IDs, docs links (below).
 7. **Copy the kit into the app** (a pinned copy, with its version noted in the app's own README), and add `data/` to the app's `.gitignore`.
@@ -99,7 +105,9 @@ Only `APP` is always needed (and `load` for an app of screens). Everything else 
 | `prepare(ctx)` | Once per scan, before anything: work out values the steps need; return a dict merged into `ctx` (`ctx['vars']` fills `{name}` in selectors) | none |
 | `WHERE` | Screens: JavaScript giving the screen showing (a string, or anything `key(raw)` turns into one) | the address |
 | `SNAPSHOT`, `RESET` | Screens: JavaScript to keep the state after set-up, and to go back to it before every tap | start a fresh copy |
-| `ROOTS` | Starting screens: `id`, `title`, `area`, `kind`, `key`, `steps`, `setup`, and for a state `state_of` and `state` | the app as it opens |
+| `ROOTS` | Starting screens: `id`, `title`, `area`, `kind`, `key`, `steps`, `setup`, and for a state `state_of` and `state`. With screen IDs, `screen` (the ID it must open) is enough: `id`, `title`, `area` and `kind` then come from it and the register | the app as it opens |
+| `NO_STATE` | `{'AB-094': 'reason'}`: screens that can't be held on screen with sample data, one plain line each | none |
+| `REUSE` | Reuse one page for states with the same set-up, put back with `RESET` (needs `RESET`) | `True` |
 | `SHEET`, `ROOT`, `BAR` | Where an open sheet, the screen and the tab bar are | common dialog selectors, `body`, none |
 | `BUTTONS` | What counts as a button | buttons, links, `[role=button]`, `[data-a]` |
 | `SKIP` | `(pattern, reason)` pairs for buttons never tapped | delete, clear, file, share, record, pay, sign out |
@@ -114,7 +122,7 @@ Only `APP` is always needed (and `load` for an app of screens). Everything else 
 | `DOORS` | Doors the scan can't test (below) | none |
 | `IDS` | Screen IDs (below) | none: code-based keys |
 
-**Steps** (in `ROOTS` and flows): `('tap', selector)` taps a real button; `('js', code)` runs a shortcut, for set-up only; `('wait', ms)`; pages also have `('goto', address)`.
+**Steps** (in `ROOTS` and flows): `('tap', selector)` taps a real button; `('tap', 'AB-001 › add-button')` taps a part by its name (see [States](#states)); `('js', code)` runs a shortcut, for set-up only; `('wait', ms)`; pages also have `('goto', address)`.
 
 ### Flows
 
@@ -127,7 +135,7 @@ FLOWS = [
 ]
 ```
 
-`start` is a starting screen's id (or a list of steps). Each step can `tap`, `fill` (sample text only), run `js` and `wait`, then the scan captures what's showing; `capture=False` skips the picture. `label` is what shows between steps (the tapped button's own name if left out), `moment` names the state, and `caption` adds a line.
+`start` is a starting screen's id, a screen ID (its plain state), or a list of steps. `tap` and `fill` take part names too. Each step can `tap`, `fill` (sample text only), run `js` and `wait`, then the scan captures what's showing; `capture=False` skips the picture. `label` is what shows between steps (the tapped button's own name if left out), `moment` names the state, and `caption` adds a line.
 
 ### Doors the scan can't test
 
@@ -149,6 +157,42 @@ IDS = {'register': 'window.SCREENS', 'screen_attr': 'data-screen', 'part_attr': 
 - **No ID yet:** a captured screen with no ID is flagged with a suggested next number. It's a suggestion only: the register changes in an app build, never from the Atlas.
 - **Not found this scan:** a live register entry no screen showed. Kept, never deleted.
 - States share their screen's ID: `AB-001~first-launch`.
+
+### States
+
+A state is a starting screen that names its screen: the sample data it needs (`setup`) and the real taps that reach it. Screens are still reached through their real buttons; shortcuts (`js`) are for set-up only.
+
+```python
+ROOTS = [
+    dict(screen='AB-001', steps=[], setup=[]),
+    dict(screen='AB-001', state='first launch', steps=[], setup=['empty']),   # a variant of AB-001
+    dict(screen='AB-004', steps=[('tap', '› settings-tab'), ('tap', 'AB-003 › about-row')], setup=[]),
+    dict(screen='AB-009', steps=[('tap', 'AB-008 › song-row[data-k="{song}"]')], setup=[]),
+]
+NO_STATE = {'AB-094': 'The launch screen is gone before the page settles'}
+```
+
+- **The screen check:** after its steps the scan reads the screen's ID off the page (the open sheet's, else the screen's). Any other ID fails the state with "opened AB-0xx instead of AB-004".
+- **Ids and variants:** a state without an `id` gets one from its screen (`ab-004`, `ab-001-first-launch`). A state with a `state` name belongs to the plain state of the same screen, and shares its buttons.
+- **Taps by part name:** `'AB-003 › about-row'` finds the part named `about-row` while AB-003 is showing: inside it when it's a sheet, anywhere outside an open sheet when it's a screen (bars and docks count). `'› settings-tab'` is a shared part, wherever it shows (an open sheet first). Anything after the name narrows it as CSS (`[data-k="{song}"]`), and `:has-text("River")` by what it says. When no element carries the name, the register's selector for that part is tried (parts as `{name, sel, was}`), and an older name (`was`) still finds it. A tap that can't be done says why: "AB-001 is showing, not AB-002", or "no part by that name is on screen".
+- **No state yet:** a Live register screen with no state and no written reason is flagged in the viewer (a card badge, a filter, the footer count) and in the scan's summary. A starting screen without `screen` counts for the screen it opened.
+- **Written reasons:** `NO_STATE` lists screens that can't be held on screen with sample data. They show "No state · <reason>", never as missing.
+- **Suggested states:** a full scan writes `suggested_states.py` beside its results, with a draft for each screen it found by tapping that has no state yet: the taps that reached it, by part name where the part has one and by selector where not. Values `prepare()` made go back to their `{name}`. Copy what you want into `ROOTS` and check each one.
+- **For an app's tests, with no browser:**
+
+```python
+from atlas_kit import coverage
+c = coverage('tools/atlas/atlas_settings.py', register=[...])   # or the settings' register(ctx), or IDS['register_file']
+assert not c['missing'], c['missing']          # Live screens with no state and no reason
+```
+
+  It returns `missing`, `reasons`, `states` (screen ID → starting screens), `unknown` (IDs a state or reason names that aren't in the register) and `register` (how many). Only starting screens that name their `screen` count here.
+
+### Pictures-only rescans
+
+`--pictures` opens every starting screen and state through its steps, takes its picture and stops: no button tests and no extra passes, flows and proposed screens included. Buttons, links, doors and map lines come from the latest full scan, and the viewer says **Buttons last checked <date>**. A screen whose picture differs from that full scan's is marked **Changed since buttons were checked**. A screen the full scan reached only by tapping, with no state, keeps the full scan's picture, marked **From the full scan**. With no full scan yet, the viewer says buttons aren't checked yet.
+
+**Faster capture (every scan):** one page per worker serves every state with the same set-up, put back with the app's `RESET` and the frozen clock between them (`--fresh-pages` or `REUSE = False` for a fresh page each time; without `RESET` every state gets a fresh page). The full-length picture is taken only when the screen is taller than the view. Any settle check the app's `where` does (waiting for its screen to stop moving) runs before every picture, as before.
 
 ### Proposed screens
 
@@ -187,9 +231,10 @@ Source: atlas · App: … · Scan: … · Kit 1.1.0
 |---|---|
 | `format`, `kit` | `4`, and the kit version that made it |
 | `app`, `kind`, `areas` | From the settings |
-| `scan` | `id`, `at`, `seconds`, `commit`, `version`, `viewport`, `data`, `clock`, `passes`, `codeStates`, `docProblems`; after an earlier scan, `prev` (with the versions `between`) and `codeChanges`; `baselines` (the earlier scans tags are counted against) |
+| `scan` | `id`, `at`, `seconds`, `commit`, `version`, `viewport`, `data`, `clock`, `passes`, `codeStates`, `docProblems`; `mode` (full · pictures · quick · part), `buttons` (the scan whose buttons these are: `id`, `at`, `version`), `reused` (pages reused), `suggested` (a full scan's suggested states); after an earlier scan, `prev` (with the versions `between`) and `codeChanges`; `baselines` (the earlier scans tags are counted against) |
+| `states` | With screen IDs: `named` (states that name their screen), `screens` (register screens with a state), `missing`, `reasons`, `unknown` |
 | `ids` | With screen IDs: `register` (how many), `noId` (with suggestions), `notFound`, `retired` |
-| `screens` | Each: `id`, `sid`, `title`, `caption`, `area`, `kind`, `key`, `family`, `state`, `stateOf`, `status` (captured · failed · uncaptured · notfound · gone), `why`, `errors`, `shot`, `full`, `elements` (for tap-a-part), `links` (label, action, how, why, `to`, `kind`, `forced`), `from`, `via`, `how`, `docs`, `mention`, `change` (since the last scan), `since` (NEW or CHANGED by baseline) |
+| `screens` | Each: `id`, `sid`, `title`, `caption`, `area`, `kind`, `key`, `family`, `state`, `stateOf`, `screen` (the ID a state names), `status` (captured · failed · uncaptured · notfound · gone), `why`, `errors`, `shot`, `full` (the same as `shot` when the screen is no taller than the view), `stateMissing`, `noState` (its written reason), `buttonsStale`, `fromFull`, `elements` (for tap-a-part), `links` (label, action, how, why, `to`, `kind`, `forced`), `from`, `via`, `how`, `docs`, `mention`, `change` (since the last scan), `since` (NEW or CHANGED by baseline) |
 | `flows` | Each: `id`, `title`, `status`, `why`, `steps` (`n`, `moment`, `label`, `shot`, `screen`, `next`: the box of the button tapped next) |
 | `doors` | `from`, `to`, `how`, `kind` |
 | `proposed` | `pid`, `screen`, `title`, `shot`, `elements`, `slug`, `url`, `version`, `status` |
@@ -204,6 +249,7 @@ Source: atlas · App: … · Scan: … · Kit 1.1.0
 | `atlas_kit/engine.py` | The scan: capture, tap, follow, flows, proposed screens |
 | `atlas_kit/browser.py` | Fresh pages with the clock frozen, and the scripts run in the page |
 | `atlas_kit/ids.py` | Screen IDs, and finding screens by any of their names |
+| `atlas_kit/states.py` | States by screen ID: part-name taps, `coverage()` and suggested states |
 | `atlas_kit/compare.py` | Changes since the last scan, and tags since a chosen version |
 | `atlas_kit/docs.py` | Doc sections and the changelog |
 | `atlas_kit/code.py` | Helpers for settings that read the app's JavaScript |
@@ -220,7 +266,7 @@ Source: atlas · App: … · Scan: … · Kit 1.1.0
 python3 tests/test_kit.py
 ```
 
-Scans a made-up website and a made-up app of screens (with IDs, a flow, a door, captions and a "version 2" that renames a code key, adds a screen with no ID and changes how one looks), then checks the viewer, notes and "check my notes" with a stand-in for the page's store, and the viewer on a phone (iPhone 15 Pro size with real touch events: pinch, double-tap, swipes, hold-to-move, 44 pt controls, easing back at the limits, one draw per screen refresh). It also checks that no app's names are in the kit, and that `SHARED.md` matches the Prototype kit's. With the Prototype kit beside this repo (or `PROTOTYPE_KIT=path`), a real Prototype kit page is captured as a proposed screen too. About 3 minutes. `python3 tests/test_kit.py phone` runs the phone checks on their own (they need the scans, so about 1½ minutes).
+Scans a made-up website and a made-up app of screens (with IDs, a flow, a door, captions and a "version 2" that renames a code key, adds a screen with no ID and changes how one looks), and the same app with a state for every screen (`tests/apps/state/atlas_states.py`: part-name taps, states that open the wrong screen, a pictures-only scan against the full scan, reused pages against fresh ones, suggested states, written reasons and `coverage()`), then checks the viewer, notes and "check my notes" with a stand-in for the page's store, and the viewer on a phone (iPhone 15 Pro size with real touch events: pinch, double-tap, swipes, hold-to-move, 44 pt controls, easing back at the limits, one draw per screen refresh). It also checks that no app's names are in the kit, and that `SHARED.md` matches the Prototype kit's. With the Prototype kit beside this repo (or `PROTOTYPE_KIT=path`), a real Prototype kit page is captured as a proposed screen too. About 3 minutes. `python3 tests/test_kit.py phone` runs the phone checks on their own (they need the scans, so about 1½ minutes).
 
 ## Licence
 

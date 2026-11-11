@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.2.0 · 12 Nov 2026
+
+*States by screen ID, taps by part name, and a quick pictures-only rescan*
+
+**States**
+- A starting screen can name the screen ID it must open (`screen='AB-041'`). After its steps the scan reads the ID off the page; anything else is Failed, "opened AB-0xx instead of AB-041". Starting screens without `screen` work as before.
+- With `screen`, a state needs no `id`, title, area or kind: they come from the screen and the register. A state with a `state` name is a variant of its screen's plain state. A flow can start at a screen ID.
+- `NO_STATE` lists screens that can't be held on screen with sample data, one plain line each, shown as "No state · <reason>".
+- A Live register screen with no state and no reason is flagged **No state yet**: a card badge (on a phone too), a filter, the footer count and the scan's summary.
+- `coverage(settings)` gives an app's tests the same check with no browser.
+
+**Taps by part name**
+- `('tap', 'AB-001 › add-button')` taps the part with that name while AB-001 is showing; `'› settings-tab'` is a shared part. CSS after the name narrows it (`[data-k="{song}"]`), and `:has-text("…")` by what it says. The register's selector for a part, and its older names, are used when the page has no such name. Flows' `tap` and `fill` take them too.
+- A tap that can't be done says why: which screen is showing instead, or that no part by that name is on screen.
+
+**Pictures-only rescans**
+- `--pictures`: every starting screen and state through its steps, no button tests, no extra passes, flows and proposed screens included. Buttons, links, doors and map lines come from the latest full scan, labelled **Buttons last checked <date>**. A screen whose picture changed since then is marked **Changed since buttons were checked**. A screen the full scan reached only by tapping keeps its picture, marked **From the full scan**.
+- `--quick` is unchanged.
+
+**Faster capture**
+- One page per worker serves every state with the same set-up, put back with the app's `RESET` and the frozen clock (`--fresh-pages` or `REUSE = False` to turn it off; no `RESET`, no reuse).
+- The full-length picture is taken only when the screen is taller than the view (`full` is the same picture otherwise).
+
+**Suggested states**
+- A full scan writes `suggested_states.py` beside its results: a draft for each screen found by tapping with no state yet, its taps by part name where the part has one, values `prepare()` made written back as `{name}`.
+
+**Tests**
+- The made-up app with a state for every screen (`tests/apps/state/atlas_states.py`): part-name taps, wrong-screen states, a pictures-only scan against the full scan (faster, same pictures, same links), reused pages against fresh ones, a changed screen marked, a written reason, suggested states, `coverage()`, and the viewer's new lines on a computer and a phone.
+
 ## 1.1.0 · 3 Nov 2026
 
 *The Atlas on a phone: pinch, swipes and a bottom bar, with the computer unchanged*
